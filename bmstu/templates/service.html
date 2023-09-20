@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    {% load static %}
+    <title>{{ service.Name }}</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}"> <!-- Include common styles -->
+    <link rel="stylesheet" type="text/css" href="{% static 'css/service.css' %}"> <!-- Include styles for the service page -->
+</head>
+<body>
+    <h1>{{ service.Name }}</h1>
+    <div class="container">
+        <div class="service-card">
+            <img src="{% static service.ImageURL %}" alt="{{ service.Name }}">
+            <p>{{ service.Description }}</p>
+            <a href="/services" class="back-link">Назад к списку услуг</a>
+        </div>
+    </div>
+</body>
+</html>
