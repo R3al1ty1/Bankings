@@ -22,5 +22,4 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('services/', views.GetServices),
     path('service/<str:name>/', views.GetService, name='service_url'),
-    #path('search', views.search, name="search")
 ]
