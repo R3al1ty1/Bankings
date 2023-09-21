@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    {% load static %}
+    <title>INKBank</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/accounts.css' %}">
+</head>
+<body>
+<h1>
+    <span class="accounts-list">Счета</span>
+    <form action="" method="GET" style="display: inline-block; margin-left: 20px;">
+        <input type="text" name="account" placeholder="Поиск...">
+        <button type="submit">Искать</button>
+    </form>
+</h1>
+
+<div class="container">
+    {% for account in accounts %}
+    <div class="account-card">
+        <img src="{% static account.ImageURL %}" alt="{{ account.Name }}">
+        <h3 class="account-name">{{ account.Name }}</h3>
+        <p class="currency"><span class="account-price">{{ account.Amount }}</span>{{ account.Currency }}</p>
+        <a href="/account/{{ account.Name }}" class="details-link">Подробнее</a>
+    </div>
+    {% endfor %}
+</div>
+</body>
+</html>

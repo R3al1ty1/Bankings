@@ -20,6 +20,6 @@ from bmstu import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('services/', views.GetServices),
-    path('service/<str:name>/', views.GetService, name='service_url'),
+    path('accounts/', views.GetAccounts),
+    path('account/<str:name>/', views.GetAccount, name='account_url'),
 ]

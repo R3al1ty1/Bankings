@@ -4,10 +4,10 @@
     justify-content: center;
     margin-top: 20px;
 }
-.services-list {
+.accounts-list {
     margin-left: 200px
 }
-.service-card {
+.account-card {
     border: 1px solid #ccc;
     margin: 10px;
     padding: 20px;
@@ -17,18 +17,24 @@
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
 }
 
-.service-card img {
+.account-card img {
     max-width: 100%;
     height: auto;
 }
 
-.service-name {
+.account-name {
     font-size: 18px;
     margin-top: 10px;
     color: #333;
 }
 
-.service-price {
+.currency {
+    font-size: 18px;
+    margin-top: 10px;
+    color: #333;
+}
+
+.account-price {
     color: #3498db;
     font-weight: bold;
 }
