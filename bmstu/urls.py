@@ -22,4 +22,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', views.GetAccounts),
     path('account/<str:name>/', views.GetAccount, name='account_url'),
+    path('get_account_icon/<int:account_id>/', views.getAccountIcon, name='get_account_icon'),
+    path('freeze_account/<str:account_name>/', views.freezeAccount, name='freeze_account'),
 ]
