@@ -10,7 +10,7 @@
 <h1>
     <span class="accounts-list">Счета</span>
     <form action="" method="GET" style="display: inline-block; margin-left: 20px;">
-        <input type="text" name="account" placeholder="Поиск...">
+        <input type="text" name="account_url" autocomplete="on" placeholder="Поиск..." value={{ account_url }}>
         <button type="submit">Искать</button>
     </form>
 </h1>
@@ -18,10 +18,12 @@
 <div class="container">
     {% for account in accounts %}
     <div class="account-card">
-        <img src="{% static account.ImageURL %}" alt="{{ account.Name }}">
-        <h3 class="account-name">{{ account.Name }}</h3>
-        <p class="currency"><span class="account-price">{{ account.Amount }}</span>{{ account.Currency }}</p>
-        <a href="/account/{{ account.Name }}" class="details-link">Подробнее</a>
+        <img src="{% url 'get_account_icon' account.id %}" alt="{{ account.name }}">
+        <h3 class="account-name">{{ account.type }} "{{ account.name }}"</h3>
+        <p class="currency"><span class="account-price">{{ account.get_display_amount }}</span> {{ account.get_currency_symbol }}</p>
+        <h4 class="availability">Доступен: {{ account.available }}</h4>
+        <a href="/account/{{ account.name }}" class="details-link">Подробнее</a>
+        <a href="/freeze_account/{{ account.name }}" class="freeze-link">Заморозить счет "{{ account.name }}"</a>
     </div>
     {% endfor %}
 </div>

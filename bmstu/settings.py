@@ -77,8 +77,18 @@ WSGI_APPLICATION = 'bmstu.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'Bankings',
+        'USER': 'postgres',
+        'PASSWORD': '5441',
+        'HOST': 'localhost',
+        'PORT': 5433,
+        'OPTIONS': {
+            'client_encoding': 'utf8',
+        },
+        'TEST': {
+            'CHARSET': 'utf8',
+        },
     }
 }
 

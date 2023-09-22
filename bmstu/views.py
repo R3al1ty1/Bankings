@@ -1,33 +1,74 @@
-from django.http import HttpResponse
+from django.db.models import Q
+from django.http import HttpResponse, HttpResponseRedirect
 from datetime import date
 from django.shortcuts import redirect, render
+from bmstu_lab.models import Account, AccountStatus, ApplicationStatus, Applications, Users, SaveTerms, CardTerms, CreditTerms, DepositTerms
 
-Accounts =[
-    {"Type": "Карта","Name": "INK No Limits", "Number": "40817810344610004312",
-     "Amount": "1 320", "ImageURL": "/image/vklad.png", "Currency": " Руб", "BIC": "044525228", "Interest": "0"},
-    {"Type": "Карта","Name": "INK Limited", "Number": "40817840344610004312",
-     "Amount": "20 450", "ImageURL": "/image/credit.png", "Currency": " $", "BIC": "044525228", "Interest": "0"},
-    {"Type": "Сберегательный счет","Name": "INK копилка",
-     "Number": "40817810344610012387",
-     "Amount": "150 000", "ImageURL": "/image/ipoteka.png", "Currency": " Руб", "BIC": "044525228", "Interest": "0.1"},
-    {"Type": "Кредитный счет","Name": "Потребительский кредит", "Number": "40817810344610065398",
-     "Amount": "1 200 000", "ImageURL": "/image/insurance.png", "Currency": " Руб", "BIC": "044525228", "Interest": "12"},
-    {"Type": "Вклад","Name": "Выгодный", "Number": "40817810344615513287",
-     "Amount": "500 000", "ImageURL": "/image/transactions.png", "Currency": " Руб", "BIC": "044525228", "Interest": "7"}
-]
+def getAccountIcon(request, account_id):
+    account = Account.objects.get(id=account_id)
+    if account.icon:
+        response = HttpResponse(account.icon, content_type='image/png')
+    else:
+        response = HttpResponse(status=204)
+
+    return response
+
+def freezeAccount(request, account_name):
+    try:
+        account = Account.objects.get(name=account_name)
+    except Account.DoesNotExist:
+        return render(request, 'error.html')
+
+    try:
+        account.change_availability()
+    except Exception as e:
+        return render(request, 'error.html')
+
+    return HttpResponseRedirect('/accounts')
 
 def GetAccounts(request):
-    account = request.GET.get('account', '')
-    if account == "":
-        return render(request, 'accounts.html', {'accounts': Accounts})
+    account_query = request.GET.get('account_url', '')
+    if account_query == "":
+        return render(request, 'accounts.html', {'accounts': Account.objects.all()})
     else:
-        found = []
-        for account in Accounts:
-            if str(account.lower()) in str(account["Name"].lower()):
-                found.append(account)
-        return render(request, 'accounts.html', {'accounts': found})
+        found = Account.objects.filter(
+            Q(name__icontains=account_query) | Q(type__icontains=account_query)
+        )
+        return render(request, 'accounts.html', {'accounts': found, 'account_url': account_query})
+
 
 def GetAccount(request, name):
-    for account in Accounts:
-        if account['Name'] == name:
-            return render(request, 'account.html', {'account': account})
+    try:
+        account = Account.objects.get(name=name)
+
+        if account.type == "Карта":
+            try:
+                card_terms = CardTerms.objects.get(number_ref=account.number)
+                return render(request, 'card.html', {'account': account, 'card_terms': card_terms})
+            except CardTerms.DoesNotExist:
+                card_terms = None
+                return render(request, 'card.html', {'account': account, 'card_terms': card_terms})
+        elif account.type == "Кредитный счет":
+            try:
+                credit_terms = CreditTerms.objects.get(number_ref=account.number)
+                return render(request, 'credit.html', {'account': account, 'credit_terms': credit_terms})
+            except CardTerms.DoesNotExist:
+                credit_terms = None
+                return render(request, 'credit.html', {'account': account, 'credit_terms': credit_terms})
+        elif account.type == "Вклад":
+            try:
+                deposit_terms = DepositTerms.objects.get(number_ref=account.number)
+                return render(request, 'deposit.html', {'account': account, 'deposit_terms': deposit_terms})
+            except DepositTerms.DoesNotExist:
+                deposit_terms = None
+                return render(request, 'deposit.html', {'account': account, 'deposit_terms': deposit_terms})
+        elif account.type == "Сберегательный счет":
+            try:
+                save_terms = SaveTerms.objects.get(number_ref=account.number)
+                return render(request, 'save.html', {'account': account, 'save_terms': save_terms})
+            except SaveTerms.DoesNotExist:
+                save_terms = None
+                return render(request, 'save.html', {'account': account, 'save_terms': save_terms})
+
+    except Account.DoesNotExist:
+        return render(request, 'error.html')

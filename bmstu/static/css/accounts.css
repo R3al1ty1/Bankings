@@ -48,3 +48,13 @@
     display: inline-block;
     margin-top: 10px;
 }
+
+.freeze-link {
+    background-color: #3498db;
+    color: #fff;
+    text-decoration: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    display: inline-block;
+    margin-top: 10px;
+}
