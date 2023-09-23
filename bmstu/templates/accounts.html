@@ -21,9 +21,13 @@
         <img src="{% url 'get_account_icon' account.id %}" alt="{{ account.name }}">
         <h3 class="account-name">{{ account.type }} "{{ account.name }}"</h3>
         <p class="currency"><span class="account-price">{{ account.get_display_amount }}</span> {{ account.get_currency_symbol }}</p>
-        <h4 class="availability">Доступен: {{ account.available }}</h4>
+        <h4 class="availability">{{ account.availability_status }}</h4>
         <a href="/account/{{ account.name }}" class="details-link">Подробнее</a>
+        {% if account.available %}
         <a href="/freeze_account/{{ account.name }}" class="freeze-link">Заморозить счет "{{ account.name }}"</a>
+        {% else %}
+        <a href="/freeze_account/{{ account.name }}" class="freeze-link">Разморозить счет "{{ account.name }}"</a>
+        {% endif %}
     </div>
     {% endfor %}
 </div>
