@@ -14,6 +14,9 @@ class Account(models.Model):
     icon = models.BinaryField(blank=True, null=True)
     available = models.BooleanField(blank=True, null=True)
 
+    def availability_status(self):
+        return "Заморожена" if not self.available else "Доступна"
+
     def change_availability(self):
         self.available = not self.available
         self.save()
