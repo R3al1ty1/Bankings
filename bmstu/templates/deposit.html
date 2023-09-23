@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    {% load static %}
+    <h1>Вклад {{ account.name }}</h1>
+    <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/account.css' %}">
+</head>
+<body>
+    <div class="container">
+        <div class="account-card">
+            <img src="{% url 'get_account_icon' account.id %}" alt="{{ account.name }}">
+            <h2>Сумма вклада: {{ account.get_display_amount }} {{ account.get_currency_symbol }}</h2>
+            <h3>Информация по вкладу</h3>
+            <p>Номер счета: {{ account.number }}</p>
+            <p>Процентная ставка: {{ deposit_terms.interest_rate }} %</p>
+            <p>Дата открытия вклада: {{ deposit_terms.creation_date }}</p>
+            <p>Дата закрытия вклада: {{ deposit_terms.end_date }}</p>
+            <p>БИК банка: {{ account.bic}}</p>
+            <a href="/accounts" class="back-link">Назад к счетам</a>
+        </div>
+    </div>
+</body>
+</html>
