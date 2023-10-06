@@ -44,36 +44,34 @@ def GetAccounts(request):
 def GetAccount(request, name):
     try:
         account = Account.objects.get(name=name)
-        ref = account.account_status_refer
-        acc_status = AccountStatus.objects.get(id=ref)
         if account.type == "Карта":
             try:
                 card_terms = CardTerms.objects.get(number_ref=account.number)
-                return render(request, 'card.html', {'account': account, 'card_terms': card_terms, 'status': acc_status})
+                return render(request, 'card.html', {'account': account, 'card_terms': card_terms})
             except CardTerms.DoesNotExist:
                 card_terms = None
-                return render(request, 'card.html', {'account': account, 'card_terms': card_terms, 'status': acc_status})
+                return render(request, 'card.html', {'account': account, 'card_terms': card_terms})
         elif account.type == "Кредитный счет":
             try:
                 credit_terms = CreditTerms.objects.get(number_ref=account.number)
-                return render(request, 'credit.html', {'account': account, 'credit_terms': credit_terms, 'status': acc_status})
+                return render(request, 'credit.html', {'account': account, 'credit_terms': credit_terms})
             except CardTerms.DoesNotExist:
                 credit_terms = None
-                return render(request, 'credit.html', {'account': account, 'credit_terms': credit_terms, 'status': acc_status})
+                return render(request, 'credit.html', {'account': account, 'credit_terms': credit_terms})
         elif account.type == "Вклад":
             try:
                 deposit_terms = DepositTerms.objects.get(number_ref=account.number)
-                return render(request, 'deposit.html', {'account': account, 'deposit_terms': deposit_terms, 'status': acc_status})
+                return render(request, 'deposit.html', {'account': account, 'deposit_terms': deposit_terms})
             except DepositTerms.DoesNotExist:
                 deposit_terms = None
-                return render(request, 'deposit.html', {'account': account, 'deposit_terms': deposit_terms, 'status': acc_status})
+                return render(request, 'deposit.html', {'account': account, 'deposit_terms': deposit_terms})
         elif account.type == "Сберегательный счет":
             try:
                 save_terms = SaveTerms.objects.get(number_ref=account.number)
-                return render(request, 'save.html', {'account': account, 'save_terms': save_terms, 'status': acc_status})
+                return render(request, 'save.html', {'account': account, 'save_terms': save_terms})
             except SaveTerms.DoesNotExist:
                 save_terms = None
-                return render(request, 'save.html', {'account': account, 'save_terms': save_terms, 'status': acc_status})
+                return render(request, 'save.html', {'account': account, 'save_terms': save_terms})
 
     except Account.DoesNotExist:
         return render(request, 'error.html')
