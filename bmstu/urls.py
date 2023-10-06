@@ -20,8 +20,16 @@ from bmstu import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('accounts/', views.GetAccounts),
-    path('account/<str:name>/', views.GetAccount, name='account_url'),
-    path('get_account_icon/<int:account_id>/', views.getAccountIcon, name='get_account_icon'),
-    path('freeze_account/<str:account_name>/', views.freezeAccount, name='freeze_account'),
+    path(r'accounts/', views.get_accounts, name='accounts-list'),
+    path(r'cards/post/', views.post_card, name='cards-post'),
+    path(r'credits/post/', views.post_credit, name='credits-post'),
+    path(r'deposits/post/', views.post_deposit, name='deposits-post'),
+    path(r'saves/post/', views.post_save, name='saves-post'),
+    path(r'accounts/<int:account_number>/', views.get_account, name='accounts-detail'),
+    path(r'accounts/<int:account_number>/put/', views.put_detail, name='accounts-put'),
+    path(r'accounts/<int:account_number>/delete/', views.delete_detail, name='accounts-delete'),
+    #path('accounts/', views.GetAccounts),
+    #path('account/<str:name>/', views.GetAccount, name='account_url'),
+    #path('get_account_icon/<int:account_id>/', views.getAccountIcon, name='get_account_icon'),
+    #path('freeze_account/<str:account_name>/', views.freezeAccount, name='freeze_account'),
 ]
