@@ -29,7 +29,13 @@ def get_account_by_name(connection, account_name):
 def change_avaialability(connection, account_name):
     cursor = connection.cursor()
 
-    cursor.execute("UPDATE account SET available = NOT available WHERE name = %s", (account_name,))
+    sql_query = """
+    UPDATE account_status
+    SET frozen = NOT frozen
+    WHERE id = (SELECT account_status_refer FROM account WHERE name = %s);
+    """
+
+    cursor.execute(sql_query, (account_name,))
 
     connection.commit()
     cursor.close()

@@ -23,7 +23,7 @@
         <p class="currency"><span class="account-price">{{ account.get_display_amount }}</span> {{ account.get_currency_symbol }}</p>
         <h4 class="availability">{{ account.availability_status }}</h4>
         <a href="/account/{{ account.name }}" class="details-link">Подробнее</a>
-        {% if account.available %}
+        {% if status.frozen %}
         <a href="/freeze_account/{{ account.name }}" class="freeze-link">Заморозить счет "{{ account.name }}"</a>
         {% else %}
         <a href="/freeze_account/{{ account.name }}" class="freeze-link">Разморозить счет "{{ account.name }}"</a>
