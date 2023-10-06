@@ -2,6 +2,9 @@ from django.db.models import Q
 from django.http import HttpResponse, HttpResponseRedirect
 from datetime import date
 from django.shortcuts import redirect, render
+from psycopg2 import Error
+
+from bmstu.db_query import get_account_by_name, connection, change_avaialability
 from bmstu_lab.models import Account, AccountStatus, ApplicationStatus, Applications, Users, SaveTerms, CardTerms, CreditTerms, DepositTerms
 
 def getAccountIcon(request, account_id):
@@ -14,14 +17,15 @@ def getAccountIcon(request, account_id):
     return response
 
 def freezeAccount(request, account_name):
-    try:
-        account = Account.objects.get(name=account_name)
-    except Account.DoesNotExist:
+    account = get_account_by_name(connection, account_name)
+
+    if not account:
         return render(request, 'error.html')
 
     try:
-        account.change_availability()
-    except Exception as e:
+        change_avaialability(connection, account_name)
+    except Error as e:
+        print("Ошибка при работе с PostgreSQL", e)
         return render(request, 'error.html')
 
     return HttpResponseRedirect('/accounts')

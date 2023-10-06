@@ -15,11 +15,8 @@ class Account(models.Model):
     available = models.BooleanField(blank=True, null=True)
 
     def availability_status(self):
-        return "Заморожена" if not self.available else "Доступна"
+        return "Заморожен" if not self.available else "Доступен"
 
-    def change_availability(self):
-        self.available = not self.available
-        self.save()
     class Meta:
         managed = False
         db_table = 'account'
