@@ -18,6 +18,11 @@ class Account(models.Model):
         frozen_status = account_status.frozen
         return "Заморожен" if not frozen_status else "Доступен"
 
+    def availability_display(self):
+        account_status = AccountStatus.objects.get(id=Account.objects.get(name=self.name).account_status_refer)
+        print(account_status.frozen)
+        return account_status.frozen
+
     class Meta:
         managed = False
         db_table = 'account'
