@@ -1,7 +1,6 @@
 from django.db import models
 
 class Account(models.Model):
-    id = models.BigIntegerField(primary_key=True)
     type = models.TextField()
     name = models.TextField()
     amount = models.FloatField()
@@ -39,7 +38,6 @@ class Account(models.Model):
 
 
 class AccountApplication(models.Model):
-    id = models.BigIntegerField(primary_key=True)
     application = models.OneToOneField('Applications', models.DO_NOTHING)
     account = models.OneToOneField(Account, models.DO_NOTHING)
 
@@ -49,7 +47,6 @@ class AccountApplication(models.Model):
 
 
 class AccountStatus(models.Model):
-    id = models.OneToOneField(Account, models.DO_NOTHING, db_column='id', primary_key=True)
     frozen = models.BooleanField()
 
     class Meta:
@@ -58,7 +55,6 @@ class AccountStatus(models.Model):
 
 
 class ApplicationStatus(models.Model):
-    id = models.OneToOneField('Applications', models.DO_NOTHING, db_column='id', primary_key=True)
     status_mod = models.BooleanField(blank=True, null=True)
     status_create = models.BooleanField()
 
@@ -69,7 +65,6 @@ class ApplicationStatus(models.Model):
 
 
 class Applications(models.Model):
-    id = models.BigIntegerField(primary_key=True)
     creation_date = models.DateField(blank=True, null=True)
     procession_date = models.DateField(blank=True, null=True)
     completion_date = models.DateField(blank=True, null=True)
@@ -151,7 +146,6 @@ class AuthUserUserPermissions(models.Model):
 
 
 class CardTerms(models.Model):
-    id = models.BigIntegerField(primary_key=True)
     number = models.BigIntegerField()
     cvv = models.IntegerField()
     holder_first_name = models.TextField()
@@ -166,7 +160,6 @@ class CardTerms(models.Model):
 
 
 class CreditTerms(models.Model):
-    id = models.BigIntegerField(primary_key=True)
     interest_rate = models.FloatField()
     payment_amount = models.FloatField()
     creation_date = models.DateField()
@@ -188,7 +181,6 @@ class CreditTerms(models.Model):
 
 
 class DepositTerms(models.Model):
-    id = models.BigIntegerField(primary_key=True)
     interest_rate = models.FloatField()
     creation_date = models.DateField()
     end_date = models.DateField()
@@ -247,7 +239,6 @@ class DjangoSession(models.Model):
 
 
 class SaveTerms(models.Model):
-    id = models.BigIntegerField(primary_key=True)
     interest_rate = models.FloatField()
     number_ref = models.ForeignKey(Account, models.DO_NOTHING, db_column='number_ref', to_field='number', blank=True, null=True)
 
@@ -257,7 +248,6 @@ class SaveTerms(models.Model):
 
 
 class Users(models.Model):
-    id = models.BigIntegerField(primary_key=True)
     first_name = models.TextField()
     last_name = models.TextField()
     patronymic = models.TextField(blank=True, null=True)
