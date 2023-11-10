@@ -55,6 +55,7 @@ class AccountStatus(models.Model):
 
 
 class ApplicationStatus(models.Model):
+    id = models.BigAutoField(primary_key=True)
     status_mod = models.BooleanField(blank=True, null=True)
     status_create = models.BooleanField()
 
@@ -65,6 +66,7 @@ class ApplicationStatus(models.Model):
 
 
 class Applications(models.Model):
+    id = models.BigAutoField(primary_key=True)
     creation_date = models.DateField(blank=True, null=True)
     procession_date = models.DateField(blank=True, null=True)
     completion_date = models.DateField(blank=True, null=True)

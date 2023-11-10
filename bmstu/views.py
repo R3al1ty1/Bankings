@@ -6,6 +6,7 @@ from django.http import HttpResponse, HttpResponseRedirect, Http404, JsonRespons
 from datetime import date
 from django.shortcuts import redirect, render
 from psycopg2 import Error
+from operator import itemgetter
 
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
@@ -32,6 +33,60 @@ def get_accounts(request, format=None):
     merged_data.extend(serial.AccountSaveSerializer(saves, many=True).data)
 
     return Response(merged_data)
+
+def typeCheck(queryset):
+    serialized_data = []
+
+    for account in queryset:
+        account_type = account.type
+
+        if account_type == "Карта":
+            serializer = serial.AccountCardSerializer(account)
+        elif account_type == "Кредитный счет":
+            serializer = serial.AccountCreditSerializer(account)
+        elif account_type == "Вклад":
+            serializer = serial.AccountDepositSerializer(account)
+        elif account_type == "Сберегательный счет":
+            serializer = serial.AccountSaveSerializer(account)
+        else:
+            # Если тип счета не соответствует ожидаемым, пропустить или выбрать другой подход
+            continue
+
+        serialized_data.append(serializer.data)
+
+    return serialized_data
+
+
+@api_view(["GET"])
+def get_accounts_search(request):
+    query = itemgetter('query')(request.GET)
+    flag = True
+    query = query.capitalize()
+    if query == "":
+        cards = Account.objects.filter(cardterms__number_ref=F('number'))
+        credits = Account.objects.filter(creditterms__number_ref=F('number'))
+        deposits = Account.objects.filter(depositterms__number_ref=F('number'))
+        saves = Account.objects.filter(saveterms__number_ref=F('number'))
+
+        merged_data = []
+        merged_data.extend(serial.AccountCardSerializer(cards, many=True).data)
+        merged_data.extend(serial.AccountCreditSerializer(credits, many=True).data)
+        merged_data.extend(serial.AccountDepositSerializer(deposits, many=True).data)
+        merged_data.extend(serial.AccountSaveSerializer(saves, many=True).data)
+
+        return Response(merged_data)
+    else:
+        if not Account.objects.filter(name__icontains=query).exists():
+            flag = False
+            #return Response(f"Такого счета нет!")
+        if not Account.objects.filter(type__icontains=query).exists() and flag == False:
+            return Response(f"Такого счета нет!")
+        if not flag:
+            resp = Account.objects.filter(type__icontains=query)
+        if flag:
+            resp = Account.objects.filter(name__icontains=query)
+        serializer = typeCheck(resp)
+        return Response(serializer)
 
 @api_view(['POST'])
 def post_card(request, format=None):
@@ -66,8 +121,8 @@ def post_save(request, format=None):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
-def get_account(request, account_number, format=None):
-    account = get_object_or_404(Account, number=account_number)
+def get_account(request, id, format=None):
+    account = get_object_or_404(Account, id=id)
     if account.type == "Карта":
         serialized_data = serial.AccountCardSerializer(account).data
     elif account.type == "Кредитный счет":
@@ -79,8 +134,8 @@ def get_account(request, account_number, format=None):
     return Response(serialized_data)
 
 @api_view(['PUT'])
-def put_detail(request, account_number, format=None):
-    account = get_object_or_404(Account, number=account_number)
+def put_detail(request, id, format=None):
+    account = get_object_or_404(Account, id=id)
     if account.type == "Карта":
         serializer = serial.AccountCardSerializer(account, data=request.data, partial=True)
     elif account.type == "Кредитный счет":
@@ -95,16 +150,16 @@ def put_detail(request, account_number, format=None):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['PUT'])
-def delete_detail(request, account_number, format=None):
-    account = get_object_or_404(Account, number=account_number)
+def delete_detail(request, id, format=None):
+    account = get_object_or_404(Account, id=id)
     account.available = False
     account.save()
     serializer = serial.AccountSerializer(account)
     return Response(serializer.data)
 
 @api_view(['DELETE'])
-def delete_detail_forever(request, account_number, format=None):
-    account = get_object_or_404(Account, number=account_number)
+def delete_detail_forever(request, id, format=None):
+    account = get_object_or_404(Account, id=id)
     stat = get_object_or_404(AccountStatus, id=account.account_status_refer)
     stat.delete()
     account.delete()
@@ -122,18 +177,21 @@ def add_account_to_application(request):
     try:
         falseStatus = ApplicationStatus.objects.get(status_create=False)
         appId = falseStatus.id
+        apps = Applications.objects.filter(application_status_refer=appId)
+        first_app = apps.first()
+        app_id = first_app.id
     except:
-        appId = -1
-    if appId != -1:
-        appAccs = AccountApplication(application_id=appId, account_id=accId)
+        app_id = -1
+    if app_id != -1:
+        appAccs = AccountApplication(application_id=app_id, account_id=accId)
         appAccs.save()
     else:
-        appAccs = AccountApplication(application_id=2, account_id=accId)
-        appAccs.save()
-        appAccId = AccountApplication.objects.filter(account_id=accId).values_list('id', flat=True)
-        applic = Applications(user_id=1, application_status_refer=appAccId[len(appAccId)-1])
+        latest = Applications.objects.last()
+        applic = Applications(id=latest.id+1,user_id=1, application_status_refer=latest.id + 1)
         applic.save()
-        applicStat = ApplicationStatus(status_create=False)
+        appAccs = AccountApplication(application_id=latest.id+1, account_id=accId)
+        appAccs.save()
+        applicStat = ApplicationStatus(id=latest.id+1,status_create=False)
         applicStat.save()
 
     return Response({'message': 'Success'}, status=status.HTTP_201_CREATED)
