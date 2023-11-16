@@ -1,6 +1,6 @@
 import psycopg2
 
-with open('/Users/user/Downloads/imgonline-com-ua-Resize-mRTj8ocOG9V8.jpg', 'rb') as file:
+with open('/Users/user/Downloads/personal-2.png', 'rb') as file:
     image_binary = file.read()
 
 
@@ -20,7 +20,7 @@ cursor = connection.cursor()
 update_query = """
     UPDATE account
     SET icon = %s
-    WHERE type = 'Карта';
+    WHERE type = 'Кредитный счет';
 """
 
 # Обновление значения столбца icon

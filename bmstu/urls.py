@@ -15,12 +15,35 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from bmstu import views
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+from rest_framework import permissions
+from rest_framework import routers
+
+router = routers.DefaultRouter()
+router.register(r'user', views.UserViewSet, basename='user')
+
+schema_view = get_schema_view(
+   openapi.Info(
+      title="Bankings API",
+      default_version='v1.1',
+      description="API for better user experience developed specifically for INK Bank",
+      terms_of_service="https://www.google.com/policies/terms/",
+      contact=openapi.Contact(email="ikworkmail@yandex.ru"),
+      license=openapi.License(name="BSD License"),
+   ),
+   public=True,
+   permission_classes=(permissions.AllowAny,),
+)
 
 urlpatterns = [
     path('api/admin/', admin.site.urls),
-    path(r'api/accounts/', views.get_accounts, name='accounts-list'),
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
+    path('login',  views.login_view, name='login'),
+    path('logout', views.logout_view, name='logout'),
     path(r'api/accounts/search', views.get_accounts_search, name='accounts-list-search'),
     path(r'api/cards/post/', views.post_card, name='cards-post'),
     path(r'api/credits/post/', views.post_credit, name='credits-post'),

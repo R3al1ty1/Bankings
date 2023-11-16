@@ -1,3 +1,5 @@
+from django.contrib.auth.base_user import AbstractBaseUser
+from django.contrib.auth.models import UserManager, PermissionsMixin
 from django.db import models
 
 class Account(models.Model):
@@ -250,13 +252,51 @@ class SaveTerms(models.Model):
 
 
 class Users(models.Model):
-    first_name = models.TextField()
-    last_name = models.TextField()
-    patronymic = models.TextField(blank=True, null=True)
-    role = models.TextField()
+    id = models.BigAutoField(primary_key=True)
+    full_name = models.TextField()
     email = models.TextField(blank=True, null=True)
     password = models.TextField(blank=True, null=True)
-
+    is_staff = models.BooleanField(blank=True, null=True)
+    is_superuser = models.BooleanField(blank=True, null=True)
     class Meta:
-        managed = False
-        db_table = 'users'
+            managed = False
+            db_table = 'users'
+
+
+class NewUserManager(UserManager):
+    def create_user(self, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError('User must have an email address')
+
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self.db)
+        return user
+
+
+class CustomUser(AbstractBaseUser, PermissionsMixin):
+    email = models.EmailField(("email адрес"), unique=True)
+    password = models.CharField(max_length=50, verbose_name="Пароль")
+    is_staff = models.BooleanField(default=False, verbose_name="Является ли пользователь менеджером?")
+    is_superuser = models.BooleanField(default=False, verbose_name="Является ли пользователь админом?")
+
+    objects = NewUserManager()
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
+
+    # Добавьте related_name, чтобы избежать конфликтов
+    groups = models.ManyToManyField(
+        'auth.Group',
+        blank=True,
+        related_name='custom_user_groups',
+    )
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        blank=True,
+        related_name='custom_user_permissions',
+    )
+
+    def __str__(self):
+        return self.email
