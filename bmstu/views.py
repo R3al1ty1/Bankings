@@ -23,6 +23,7 @@ from .tasks import delete_account
 from .funcs import getAccounts, typeCheck, accsList
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
+from bmstu.permissions import IsAdmin
 
 from django.contrib.auth import authenticate, login, logout
 from django.http import HttpResponse
@@ -69,7 +70,8 @@ def get_accounts_search(request):
     responses={201: openapi.Response('Successful response', serial.AccountCardSerializer)},
 )
 @api_view(['POST'])
-@method_permission_classes((IsAdmin,))
+@permission_classes([IsManager])
+@permission_classes([IsAdmin])
 def post_card(request, format=None):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     serializer = serial.AccountCardSerializer(data=request.data)
@@ -84,7 +86,8 @@ def post_card(request, format=None):
     responses={201: openapi.Response('Successful response', serial.AccountCreditSerializer)},
 )
 @api_view(['POST'])
-@method_permission_classes((IsAdmin,))
+@permission_classes([IsManager])
+@permission_classes([IsAdmin])
 def post_credit(request, format=None):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     serializer = serial.AccountCreditSerializer(data=request.data)
@@ -99,7 +102,8 @@ def post_credit(request, format=None):
     responses={201: openapi.Response('Successful response', serial.AccountDepositSerializer)},
 )
 @api_view(['POST'])
-@method_permission_classes((IsAdmin,))
+@permission_classes([IsManager])
+@permission_classes([IsAdmin])
 def post_deposit(request, format=None):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     serializer = serial.AccountDepositSerializer(data=request.data)
@@ -114,7 +118,8 @@ def post_deposit(request, format=None):
     responses={201: openapi.Response('Successful response', serial.AccountSaveSerializer)},
 )
 @api_view(['POST'])
-@method_permission_classes((IsAdmin,))
+@permission_classes([IsManager])
+@permission_classes([IsAdmin])
 def post_save(request, format=None):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     serializer = serial.AccountSaveSerializer(data=request.data)
@@ -144,7 +149,8 @@ def get_account(request, id, format=None):
     responses={200: openapi.Response('Successful response', serial.AccountCardSerializer)},
 )
 @api_view(['PUT'])
-@method_permission_classes((IsAdmin,))
+@permission_classes([IsManager])
+@permission_classes([IsAdmin])
 def put_detail(request, id, format=None):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     account = get_object_or_404(Account, id=id)
@@ -156,6 +162,7 @@ def put_detail(request, id, format=None):
         serializer = serial.AccountDepositSerializer(account, data=request.data, partial=True)
     elif account.type == "Сберегательный счет":
         serializer = serial.AccountSaveSerializer(account, data=request.data, partial=True)
+
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data)
@@ -275,7 +282,8 @@ def delete_application(request, pk, format=None):
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 @api_view(['DELETE'])
-@method_permission_classes((IsAdmin,))
+@permission_classes([IsManager])
+@permission_classes([IsAdmin])
 def delete_app_acc(request, acc_id, app_id, format=None):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     app_acc = get_object_or_404(AccountApplication, account_id=acc_id, application_id=app_id)
@@ -288,7 +296,8 @@ def delete_app_acc(request, acc_id, app_id, format=None):
     responses={200: openapi.Response('Successful response', serial.AccountApplicationSerializer)},
 )
 @api_view(['PUT'])
-@method_permission_classes((IsAdmin,))
+@permission_classes([IsManager])
+@permission_classes([IsAdmin])
 def put_app_acc(request, acc_id, app_id, format=None):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     app_acc = get_object_or_404(AccountApplication, account_id=acc_id, application_id=app_id)
@@ -303,7 +312,8 @@ def put_app_acc(request, acc_id, app_id, format=None):
     responses={200: openapi.Response('Successful response', serial.ApplicationStatusSerializer)},
 )
 @api_view(['PUT'])
-@method_permission_classes((IsAdmin,))
+@permission_classes([IsManager])
+@permission_classes([IsAdmin])
 def put_create_status(request, id, format=None):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     stat = get_object_or_404(ApplicationStatus, id=id)
@@ -318,7 +328,8 @@ def put_create_status(request, id, format=None):
     responses={200: openapi.Response('Successful response', serial.ApplicationStatusSerializer)},
 )
 @api_view(['PUT'])
-@method_permission_classes((IsAdmin,))
+@permission_classes([IsManager])
+@permission_classes([IsAdmin])
 def put_mod_status(request, id, format=None):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     stat = get_object_or_404(ApplicationStatus, id=id)
