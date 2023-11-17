@@ -20,10 +20,7 @@ from bmstu import views
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework import permissions
-from rest_framework import routers
 
-router = routers.DefaultRouter()
-router.register(r'user', views.UserViewSet, basename='user')
 
 schema_view = get_schema_view(
    openapi.Info(
@@ -41,9 +38,10 @@ schema_view = get_schema_view(
 urlpatterns = [
     path('api/admin/', admin.site.urls),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
-    path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
-    path('login',  views.login_view, name='login'),
-    path('logout', views.logout_view, name='logout'),
+    path("api/register/", views.register, name="register"),
+    path("api/login/", views.login, name="login"),
+    path("api/check/", views.check, name="check_access_token"),
+    path("api/logout/", views.logout, name="logout"),
     path(r'api/accounts/search', views.get_accounts_search, name='accounts-list-search'),
     path(r'api/cards/post/', views.post_card, name='cards-post'),
     path(r'api/credits/post/', views.post_credit, name='credits-post'),

@@ -5,15 +5,20 @@ from django.http import JsonResponse
 from datetime import date
 from operator import itemgetter
 
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly
+from rest_framework.decorators import permission_classes
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.schemas import openapi
 
-from bmstu_lab.models import Account, AccountStatus, ApplicationStatus, Applications, Users, SaveTerms, CardTerms, \
+from bmstu_lab.models import Account, AccountStatus, ApplicationStatus, Applications, SaveTerms, CardTerms, \
     CreditTerms, DepositTerms, AccountApplication, CustomUser
 import bmstu_lab.serializers as serial
+from . import settings
+from .permissions import IsAdmin, IsManager
 from .tasks import delete_account
 from .funcs import getAccounts, typeCheck, accsList
 from drf_yasg import openapi
@@ -23,9 +28,22 @@ from django.contrib.auth import authenticate, login, logout
 from django.http import HttpResponse
 from rest_framework.permissions import AllowAny
 from django.views.decorators.csrf import csrf_exempt
+from django.core.cache import cache
+from .jwt_helper import create_access_token, create_refresh_token, get_jwt_payload, get_access_token, get_refresh_token
+
+def method_permission_classes(classes):
+    def decorator(func):
+        def decorated_func(self, *args, **kwargs):
+            self.permission_classes = classes
+            self.check_permissions(self.request)
+            return func(self, *args, **kwargs)
+        return decorated_func
+    return decorator
 
 @api_view(["GET"])
 def get_accounts_search(request):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticatedOrReadOnly]
     query = itemgetter('query')(request.GET)
     flag = True
     query = query.capitalize()
@@ -51,7 +69,9 @@ def get_accounts_search(request):
     responses={201: openapi.Response('Successful response', serial.AccountCardSerializer)},
 )
 @api_view(['POST'])
+@method_permission_classes((IsAdmin,))
 def post_card(request, format=None):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
     serializer = serial.AccountCardSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
@@ -64,7 +84,9 @@ def post_card(request, format=None):
     responses={201: openapi.Response('Successful response', serial.AccountCreditSerializer)},
 )
 @api_view(['POST'])
+@method_permission_classes((IsAdmin,))
 def post_credit(request, format=None):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
     serializer = serial.AccountCreditSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
@@ -77,7 +99,9 @@ def post_credit(request, format=None):
     responses={201: openapi.Response('Successful response', serial.AccountDepositSerializer)},
 )
 @api_view(['POST'])
+@method_permission_classes((IsAdmin,))
 def post_deposit(request, format=None):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
     serializer = serial.AccountDepositSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
@@ -90,7 +114,9 @@ def post_deposit(request, format=None):
     responses={201: openapi.Response('Successful response', serial.AccountSaveSerializer)},
 )
 @api_view(['POST'])
+@method_permission_classes((IsAdmin,))
 def post_save(request, format=None):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
     serializer = serial.AccountSaveSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
@@ -99,6 +125,8 @@ def post_save(request, format=None):
 
 @api_view(['GET'])
 def get_account(request, id, format=None):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticatedOrReadOnly]
     account = get_object_or_404(Account, id=id)
     if account.type == "Карта":
         serialized_data = serial.AccountCardSerializer(account).data
@@ -116,7 +144,9 @@ def get_account(request, id, format=None):
     responses={200: openapi.Response('Successful response', serial.AccountCardSerializer)},
 )
 @api_view(['PUT'])
+@method_permission_classes((IsAdmin,))
 def put_detail(request, id, format=None):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
     account = get_object_or_404(Account, id=id)
     if account.type == "Карта":
         serializer = serial.AccountCardSerializer(account, data=request.data, partial=True)
@@ -133,6 +163,8 @@ def put_detail(request, id, format=None):
 
 @api_view(['PUT'])
 def delete_detail(request, id, format=None):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticatedOrReadOnly]
     account = get_object_or_404(Account, id=id)
     account.available = False
     account.delete_date = date.today()
@@ -149,6 +181,8 @@ def delete_detail(request, id, format=None):
 )
 @api_view(['POST'])
 def add_account_to_application(request):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticatedOrReadOnly]
     user = get_object_or_404(Users, id=1)
     data = json.loads(request.body)
     accId = data.get('id')
@@ -178,6 +212,8 @@ def add_account_to_application(request):
 
 @api_view(['GET'])
 def get_applications(request, format=None):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticatedOrReadOnly]
     applications = Applications.objects.all()
     serialized_applications = serial.ApplicationsSerializer(applications, many=True).data
 
@@ -196,6 +232,8 @@ def get_applications(request, format=None):
 
 @api_view(['GET'])
 def get_application(request, pk, format=None):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticatedOrReadOnly]
     application = get_object_or_404(Applications, id=pk)
 
     if request.method == 'GET':
@@ -219,6 +257,8 @@ def get_application(request, pk, format=None):
 )
 @api_view(['PUT'])
 def put_application(request, pk, format=None):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticatedOrReadOnly]
     application = get_object_or_404(Applications, id=pk)
     serializer = serial.ApplicationsSerializer(application, data=request.data, partial=True)
     if serializer.is_valid():
@@ -228,12 +268,16 @@ def put_application(request, pk, format=None):
 
 @api_view(['DELETE'])
 def delete_application(request, pk, format=None):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticatedOrReadOnly]
     application = get_object_or_404(Applications, id=pk)
     application.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 @api_view(['DELETE'])
+@method_permission_classes((IsAdmin,))
 def delete_app_acc(request, acc_id, app_id, format=None):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
     app_acc = get_object_or_404(AccountApplication, account_id=acc_id, application_id=app_id)
     app_acc.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
@@ -244,7 +288,9 @@ def delete_app_acc(request, acc_id, app_id, format=None):
     responses={200: openapi.Response('Successful response', serial.AccountApplicationSerializer)},
 )
 @api_view(['PUT'])
+@method_permission_classes((IsAdmin,))
 def put_app_acc(request, acc_id, app_id, format=None):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
     app_acc = get_object_or_404(AccountApplication, account_id=acc_id, application_id=app_id)
     serializer = serial.AccountApplicationSerializer(app_acc, data=request.data, partial=True)
     if serializer.is_valid():
@@ -257,7 +303,9 @@ def put_app_acc(request, acc_id, app_id, format=None):
     responses={200: openapi.Response('Successful response', serial.ApplicationStatusSerializer)},
 )
 @api_view(['PUT'])
+@method_permission_classes((IsAdmin,))
 def put_create_status(request, id, format=None):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
     stat = get_object_or_404(ApplicationStatus, id=id)
     stat.status_create = not stat.status_create
     stat.save()
@@ -270,11 +318,13 @@ def put_create_status(request, id, format=None):
     responses={200: openapi.Response('Successful response', serial.ApplicationStatusSerializer)},
 )
 @api_view(['PUT'])
+@method_permission_classes((IsAdmin,))
 def put_mod_status(request, id, format=None):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
     stat = get_object_or_404(ApplicationStatus, id=id)
     application = get_object_or_404(Applications, application_status_refer=id)
     ref = application.user_id
-    user = get_object_or_404(Users, id=ref)
+    user = get_object_or_404(CustomUser, id=ref)
     if user.role == "admin":
         serializer = serial.ApplicationStatusSerializer(stat, data=request.data, partial=True)
         if serializer.is_valid():
@@ -283,43 +333,98 @@ def put_mod_status(request, id, format=None):
     else:
         return Response("Доступ запрещен", status=status.HTTP_403_FORBIDDEN)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-class UserViewSet(viewsets.ModelViewSet):
-    """Класс, описывающий методы работы с пользователями
-    Осуществляет связь с таблицей пользователей в базе данных
-    """
-    queryset = CustomUser.objects.all()
-    serializer_class = serial.UserSerializer
-    model_class = CustomUser
-
-    def create(self, request):
-        if self.model_class.objects.filter(email=request.data['email']).exists():
-            return Response({'status': 'Exist'}, status=400)
-        serializer = self.serializer_class(data=request.data)
-        if serializer.is_valid():
-            print(serializer.data)
-            self.model_class.objects.create_user(email=serializer.data['email'],
-                                     password=serializer.data['password'],
-                                     is_superuser=serializer.data['is_superuser'],
-                                     is_staff=serializer.data['is_staff'])
-            return Response({'status': 'Success'}, status=200)
-        return Response({'status': 'Error', 'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
+@api_view(["POST"])
 @permission_classes([AllowAny])
 @authentication_classes([])
-@csrf_exempt
-@swagger_auto_schema(method='post', request_body=serial.UserSerializer)
-@api_view(['Post'])
-def login_view(request):
-    email = request.data.get("email")
-    password = request.data.get("password")
-    user = authenticate(request, email=email, password=password)
-    if user is not None:
-        login(request, user)
-        return HttpResponse("{'status': 'ok'}")
-    else:
-        return HttpResponse("{'status': 'error', 'error': 'login failed'}")
+def login(request):
+    # Ensure email and passwords are posted properly
+    serializer = serial.UserLoginSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-def logout_view(request):
-    logout(request._request)
-    return Response({'status': 'Success'})
+    # Check credentials
+    user = authenticate(**serializer.data)
+    if user is None:
+        message = {"message": "invalid credentials"}
+        return Response(message, status=status.HTTP_401_UNAUTHORIZED)
+
+    # Create new access and refresh token
+    access_token = create_access_token(user.id)
+
+    # Add access token to redis for validating by other services
+    user_data = {
+        "user_id": user.id,
+        "full_name": user.full_name,
+        "email": user.email,
+        "is_staff": user.is_staff,
+        "access_token": access_token
+    }
+    access_token_lifetime = settings.ACCESS_TOKEN_LIFETIME  # Предположим, что у вас есть такая переменная в settings.py
+    cache.set(access_token, user_data, access_token_lifetime)
+
+    # Create response object
+    response = Response(user_data, status=status.HTTP_201_CREATED)
+    # Set access token in cookie
+    response.set_cookie('access_token', access_token, httponly=False, expires=access_token_lifetime, samesite="Lax")
+
+    return response
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@authentication_classes([])
+def register(request):
+    # Ensure username and passwords are posted is properly
+    serializer = serial.UserRegisterSerializer(data=request.data)
+
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # Create user
+    user = serializer.save()
+    message = {
+        'message': 'User registered successfully',
+        'user_id': user.id
+    }
+
+    return Response(message, status=status.HTTP_201_CREATED)
+
+
+@api_view(["POST"])
+def check(request):
+    access_token = get_access_token(request)
+
+    if access_token is None:
+        message = {"message": "Token is not found"}
+        return Response(message, status=status.HTTP_401_UNAUTHORIZED)
+
+    # Check is token in Redis
+    if not cache.has_key(access_token):
+        message = {"message": "Token is not valid"}
+        return Response(message, status=status.HTTP_401_UNAUTHORIZED)
+
+    user_data = cache.get(access_token)
+    return Response(user_data, status=status.HTTP_200_OK)
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+@authentication_classes([])
+def logout(request):
+    access_token = request.COOKIES.get('access_token')
+
+    # Check access token is in cookie
+    if access_token is None:
+        message = {"message": "Token is not found in cookie"}
+        return Response(message, status=status.HTTP_401_UNAUTHORIZED)
+
+    #  Check access token is in Redis
+    if cache.has_key(access_token):
+        # Delete access token from Redis
+        cache.delete(access_token)
+
+    # Create response object
+    message = {"message": "Logged out successfully!"}
+    response = Response(message, status=status.HTTP_200_OK)
+    # Delete access token from cookie
+    response.delete_cookie('access_token')
+
+    return response
