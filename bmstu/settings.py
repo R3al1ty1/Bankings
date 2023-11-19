@@ -14,11 +14,27 @@ import os
 from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
+from celery import Celery
 
 load_dotenv()
 
+# set the default Django settings module for the 'celery' program.
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'your_project.settings')
+
+# create a Celery instance and configure it using the settings module.
+app = Celery('bmstu')
+
+# Load task modules from all registered Django app configs.
+app.config_from_object('django.conf:settings', namespace='CELERY')
+
+# Auto-discover tasks in all installed apps
+app.autodiscover_tasks()
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 
 
 # Quick-start development settings - unsuitable for production
@@ -46,11 +62,19 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'bmstu_lab.apps.BmstuLabConfig',
+    'django_celery_beat',
     'bmstu',
     'drf_yasg',
     'rest_framework',
     'corsheaders'
 ]
+
+CELERY_BEAT_SCHEDULE = {
+    'my-periodic-task': {
+        'task': 'bmstu.tasks',  # Update with the actual path to your periodic task
+        'schedule': timedelta(seconds=10),  # Adjust the schedule as needed
+    },
+}
 
 # CELERY_BROKER_URL = 'redis://localhost:6379/0'
 # CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'

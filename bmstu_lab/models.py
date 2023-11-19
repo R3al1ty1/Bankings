@@ -58,6 +58,7 @@ class Account(models.Model):
     user_id_refer = models.ForeignKey(CustomUser, models.DO_NOTHING, db_column='user_id_refer')
     icon = models.BinaryField(blank=True, null=True)
     available = models.BooleanField(blank=True, null=True)
+    delete_date = models.DateField(blank=True, null=True)
 
     def availability_status(self):
         account_status = AccountStatus.objects.get(id=Account.objects.get(name=self.name).account_status_refer)

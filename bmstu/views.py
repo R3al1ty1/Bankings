@@ -169,6 +169,7 @@ def put_detail(request, id, format=None):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['PUT'])
+@permission_classes([AllowAny])
 def delete_detail(request, id, format=None):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [IsAuthenticatedOrReadOnly]
@@ -176,7 +177,7 @@ def delete_detail(request, id, format=None):
     account.available = False
     account.delete_date = date.today()
     account.save()
-    #delete_account.apply_async(args=[account.id], countdown=10)
+    delete_account.apply_async(args=[account.id], countdown=10)
 
     resp = getAccounts()
     return Response(getAccounts())
