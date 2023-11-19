@@ -12,12 +12,29 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 import os
 from pathlib import Path
+from datetime import timedelta
 from dotenv import load_dotenv
+from celery import Celery
 
 load_dotenv()
 
+# set the default Django settings module for the 'celery' program.
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'your_project.settings')
+
+# create a Celery instance and configure it using the settings module.
+app = Celery('bmstu')
+
+# Load task modules from all registered Django app configs.
+app.config_from_object('django.conf:settings', namespace='CELERY')
+
+# Auto-discover tasks in all installed apps
+app.autodiscover_tasks()
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 
 
 # Quick-start development settings - unsuitable for production
@@ -29,7 +46,10 @@ SECRET_KEY = 'django-insecure-al(3*z02k@e&@&p9+31ob5v%)ou0rp2m&)8j5z1n1^uy%ptb&t
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
+
+REDIS_HOST = 'localhost'
+REDIS_PORT = '6379'
 
 
 # Application definition
@@ -42,11 +62,19 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'bmstu_lab.apps.BmstuLabConfig',
-
+    'django_celery_beat',
+    'bmstu',
     'drf_yasg',
     'rest_framework',
     'corsheaders'
 ]
+
+CELERY_BEAT_SCHEDULE = {
+    'my-periodic-task': {
+        'task': 'bmstu.tasks',  # Update with the actual path to your periodic task
+        'schedule': timedelta(seconds=10),  # Adjust the schedule as needed
+    },
+}
 
 # CELERY_BROKER_URL = 'redis://localhost:6379/0'
 # CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
@@ -57,7 +85,6 @@ INSTALLED_APPS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-    #'rest_framework.permissions.IsAuthenticatedOrReadOnly',
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
@@ -67,15 +94,18 @@ REST_FRAMEWORK = {
     'DEFAULT_PARSER_CLASSES': [
         'rest_framework.parsers.JSONParser',
     ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ]
 }
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -85,6 +115,7 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 ROOT_URLCONF = 'bmstu.urls'
+
 
 TEMPLATES = [
     {
@@ -145,6 +176,33 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_HEADERS = [
+    "Authorization",
+    "Content-Type",
+]
+
+AUTH_USER_MODEL = 'bmstu_lab.CustomUser'
+
+JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": "MY_SIGNING_KEY_123",
+}
+
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://" + REDIS_HOST + ":" + REDIS_PORT,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient"
+        },
+    }
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
@@ -166,7 +224,13 @@ STATICFILES_DIRS = [
     BASE_DIR / "bmstu/static"
 ]
 
+ACCESS_TOKEN_LIFETIME = 3600
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
