@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from bmstu import views
+from accounts import views
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework import permissions
@@ -41,7 +41,10 @@ urlpatterns = [
     path("api/register/", views.register, name="register"),
     path("api/login/", views.login, name="login"),
     path("api/check/", views.check, name="check_access_token"),
+    path('api/refresh/', views.refresh, name='refresh-token'),
     path("api/logout/", views.logout, name="logout"),
+    path(r'api/accounts/', views.get_accounts, name='accounts-list'),
+    path(r'api/accounts/create', views.create_account, name='accounts-create'),
     path(r'api/accounts/search', views.get_accounts_search, name='accounts-list-search'),
     path(r'api/cards/post/', views.post_card, name='cards-post'),
     path(r'api/credits/post/', views.post_credit, name='credits-post'),
@@ -49,17 +52,19 @@ urlpatterns = [
     path(r'api/saves/post/', views.post_save, name='saves-post'),
     path(r'api/accounts/<int:id>/', views.get_account, name='accounts-detail'),
     path(r'api/accounts/<int:id>/put/', views.put_detail, name='accounts-put'),
-    path(r'api/account_application/<int:id>/post/', views.add_account_to_application, name='acc-app-post'),
+    path(r'api/account_application/<int:accId>/post/', views.add_account_to_application, name='acc-app-post'),
     path(r'api/accounts/<int:id>/delete/', views.delete_detail, name='accounts-delete'),
     path(r'api/applications/', views.get_applications, name='applications-list'),
-    path(r'api/accounts/post/', views.add_account_to_application, name='account-post'),
+    path(r'api/accounts/<int:accId>/post/', views.add_account_to_application, name='account-post'),
+    path(r'api/applications/draft/', views.get_application_draft, name='applications-draft'),
     path(r'api/applications/<int:pk>/', views.get_application, name='applications-detail'),
     path(r'api/applications/<int:pk>/put/', views.put_application, name='applications-put'),
-    path(r'api/applications/<int:pk>/delete/', views.delete_application, name='applications-delete'),
+    path(r'api/applications/<int:id>/delete/', views.delete_application, name='applications-delete'),
     path(r'api/apps_accs/<int:acc_id>/<int:app_id>/delete/', views.delete_app_acc, name='app-acc-delete'),
     path(r'api/apps_accs/<int:acc_id>/<int:app_id>/put/', views.put_app_acc, name='app-acc-put'),
     path(r'api/app_create_status/<int:id>/put/', views.put_create_status, name='app-create-put'),
     path(r'api/app_mod_status/<int:id>/put/', views.put_mod_status, name='app-mod-put'),
+    path(r'api/icon/<str:type>/', views.getIcon, name='get-icons'),
     #path('accounts/', views.GetAccounts),
     #path('account/<str:name>/', views.GetAccount, name='account_url'),
     #path('get_account_icon/<int:account_id>/', views.getAccountIcon, name='get_account_icon'),

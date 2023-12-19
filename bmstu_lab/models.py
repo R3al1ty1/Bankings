@@ -102,28 +102,20 @@ class AccountStatus(models.Model):
         db_table = 'account_status'
 
 
-class ApplicationStatus(models.Model):
-    id = models.BigAutoField(primary_key=True)
-    status_mod = models.BooleanField(blank=True, null=True)
-    status_create = models.BooleanField()
-
-    class Meta:
-        managed = False
-        db_table = 'application_status'
-
-
 
 class Applications(models.Model):
     id = models.BigAutoField(primary_key=True)
     creation_date = models.DateField(blank=True, null=True)
     procession_date = models.DateField(blank=True, null=True)
     completion_date = models.DateField(blank=True, null=True)
-    user = models.ForeignKey(CustomUser, models.DO_NOTHING)
-    application_status_refer = models.BigIntegerField(unique=True)
+    user = models.ForeignKey('CustomUser', models.DO_NOTHING)
+    agreement_refer = models.BigIntegerField(unique=True)
+    status = models.IntegerField(blank=True, null=True)
 
     class Meta:
         managed = False
         db_table = 'applications'
+
 
 
 class AuthGroup(models.Model):
