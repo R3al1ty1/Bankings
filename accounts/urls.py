@@ -36,37 +36,49 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
+    #админ
     path('api/admin/', admin.site.urls),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+
+    #счета
+    path(r'api/accounts/', views.get_accounts, name='accounts-list'),
+    path(r'api/accounts/create', views.create_account, name='accounts-create'),
+    path(r'api/accounts/search', views.get_accounts_search, name='accounts-list-search'),
+    path(r'api/accounts/mod', views.get_accounts_mod, name='accounts-list-mod'),
+    path(r'api/accounts/<int:id>/', views.get_account, name='accounts-detail'),
+    path(r'api/accounts/<int:id>/put/', views.put_detail, name='accounts-put'),
+    path(r'api/accounts/<int:id>/delete/', views.delete_detail, name='accounts-delete'),
+
+    #договоры
+    path(r'api/agreements/', views.get_agreements, name='agreements-list-all'),
+    path(r'api/agreements/open/', views.get_agreements_open, name='agreements-list-open'),
+    path(r'api/agreements/<int:id>/', views.get_agreement, name='agreement-detail'),
+    path(r'api/agreements/mod', views.get_agreements_mod, name='agreements-list-mod'),
+    path(r'api/agreements/<int:id>/put/', views.put_agreement, name='agreement-put'),
+    path(r'api/agreements/post/', views.create_agreement, name='agreement-post'),
+
+    #заявки
+    path(r'api/applications/', views.get_applications, name='applications-list'),
+    path(r'api/applications/mod', views.get_applications_mod, name='applications-list-mod'),
+    path(r'api/applications/<int:pk>/', views.get_application, name='applications-detail'),
+    path(r'api/applications/<int:pk>/put/', views.put_application, name='applications-put'),
+    path(r'api/applications/<int:id>/delete/', views.delete_application, name='applications-delete'),
+    path(r'api/app_create_status/<int:id>/put/', views.put_create_status, name='app-create-put'),
+    path(r'api/app_mod_status/<int:id>/put/', views.put_mod_status, name='app-mod-put'),
+
+    #м-м
+    path(r'api/apps_accs/<int:acc_id>/<int:app_id>/delete/', views.delete_app_acc, name='app-acc-delete'),
+    path(r'api/apps_accs/<int:acc_id>/<int:app_id>/put/', views.put_app_acc, name='app-acc-put'),
+
+    #пользователь и токены
     path("api/register/", views.register, name="register"),
     path("api/login/", views.login, name="login"),
     path("api/check/", views.check, name="check_access_token"),
     path('api/refresh/', views.refresh, name='refresh-token'),
     path("api/logout/", views.logout, name="logout"),
-    path(r'api/accounts/', views.get_accounts, name='accounts-list'),
-    path(r'api/accounts/create', views.create_account, name='accounts-create'),
-    path(r'api/accounts/search', views.get_accounts_search, name='accounts-list-search'),
-    path(r'api/cards/post/', views.post_card, name='cards-post'),
-    path(r'api/credits/post/', views.post_credit, name='credits-post'),
-    path(r'api/deposits/post/', views.post_deposit, name='deposits-post'),
-    path(r'api/saves/post/', views.post_save, name='saves-post'),
-    path(r'api/accounts/<int:id>/', views.get_account, name='accounts-detail'),
-    path(r'api/accounts/<int:id>/put/', views.put_detail, name='accounts-put'),
-    path(r'api/account_application/<int:accId>/post/', views.add_account_to_application, name='acc-app-post'),
-    path(r'api/accounts/<int:id>/delete/', views.delete_detail, name='accounts-delete'),
-    path(r'api/applications/', views.get_applications, name='applications-list'),
-    path(r'api/accounts/<int:accId>/post/', views.add_account_to_application, name='account-post'),
-    path(r'api/applications/draft/', views.get_application_draft, name='applications-draft'),
-    path(r'api/applications/<int:pk>/', views.get_application, name='applications-detail'),
-    path(r'api/applications/<int:pk>/put/', views.put_application, name='applications-put'),
-    path(r'api/applications/<int:id>/delete/', views.delete_application, name='applications-delete'),
-    path(r'api/apps_accs/<int:acc_id>/<int:app_id>/delete/', views.delete_app_acc, name='app-acc-delete'),
-    path(r'api/apps_accs/<int:acc_id>/<int:app_id>/put/', views.put_app_acc, name='app-acc-put'),
-    path(r'api/app_create_status/<int:id>/put/', views.put_create_status, name='app-create-put'),
-    path(r'api/app_mod_status/<int:id>/put/', views.put_mod_status, name='app-mod-put'),
+
+    #разное
     path(r'api/icon/<str:type>/', views.getIcon, name='get-icons'),
-    #path('accounts/', views.GetAccounts),
-    #path('account/<str:name>/', views.GetAccount, name='account_url'),
-    #path('get_account_icon/<int:account_id>/', views.getAccountIcon, name='get_account_icon'),
-    #path('freeze_account/<str:account_name>/', views.freezeAccount, name='freeze_account'),
+    path('api/test/', views.updateNumber, name='test'),
+    path(r'api/accounts/async/<int:id>/put/', views.put_detail_async, name='accounts-put-async'),
 ]

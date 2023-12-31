@@ -15,13 +15,14 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.schemas import openapi
 
-from bmstu_lab.models import Account, AccountStatus, Applications, SaveTerms, CardTerms, \
+from bmstu_lab.models import Account, Agreement, Applications, SaveTerms, CardTerms, \
     CreditTerms, DepositTerms, AccountApplication, CustomUser
 import bmstu_lab.serializers as serial
 from . import settings
 from .permissions import IsAuthenticated, IsManager
 from .tasks import delete_account
-from .funcs import getAccounts, typeCheck, accsList, create_account
+from .funcs import getAccounts, typeCheck, accsList, create_new_account, getAccountsMod, update_number, create_new_card, \
+    create_new_credit, create_new_deposit, create_new_save, get_application_by_user
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from minio import Minio
@@ -66,20 +67,71 @@ def get_accounts(request):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 @authentication_classes([])
+def updateNumber(request):
+    update_number(73,76)
+    return Response(status=status.HTTP_200_OK)
+
+@api_view(['PUT'])
+@permission_classes([AllowAny])
+@authentication_classes([])
+def put_detail_async(request, id, format=None):
+    account = get_object_or_404(Account, id=id)
+    if account.type == "Карта":
+        serializer = serial.AccountCardSerializer(account, data=request.data, partial=True)
+    elif account.type == "Кредитный счет":
+        serializer = serial.AccountCreditSerializer(account, data=request.data, partial=True)
+    elif account.type == "Вклад":
+        serializer = serial.AccountDepositSerializer(account, data=request.data, partial=True)
+    elif account.type == "Сберегательный счет":
+        serializer = serial.AccountSaveSerializer(account, data=request.data, partial=True)
+
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(["GET"])
+@permission_classes([IsManager])
+@authentication_classes([])
+def get_accounts_mod(request):
+    query = itemgetter('query')(request.GET)
+    query = query.strip()
+
+    if query == "":
+        resp = getAccountsMod()
+        response = Response(resp)
+    else:
+        resp = Account.objects.filter(number__startswith=query)
+        serializer = typeCheck(resp)
+        response = Response(serializer)
+
+    return response
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+@authentication_classes([])
 def get_accounts_search(request):
     token = get_access_token(request)
-    # Добавлен блок для обработки отсутствия токена, вам может потребоваться определить, как обрабатывать эту ситуацию
     if not token:
         return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
 
     payload = get_jwt_payload(token)
     user_id = payload["user_id"]
+
     query = itemgetter('query')(request.GET)
     flag = True
     query = query.capitalize()
 
+    try:
+        application = Applications.objects.get(status=1, user_id=user_id)
+        appId = application.id
+    except Applications.DoesNotExist:
+        appId = 0
+
     if query == "":
         resp = getAccounts(user_id)
+        resp.append({"appId": appId})
         response = Response(resp)
     else:
         if not Account.objects.filter(name__icontains=query, available=True, user_id_refer=user_id).exists():
@@ -92,90 +144,143 @@ def get_accounts_search(request):
             else:
                 resp = Account.objects.filter(name__icontains=query, available=True, user_id_refer=user_id)
             serializer = typeCheck(resp)
-            response = Response(serializer)
+
+            serialized_data = serializer.data
+            serialized_data.append({"appId": appId})
+            response = Response(serialized_data)
 
     return response
 
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+@authentication_classes([])
+def get_agreements(request):
+    token = get_access_token(request)
+    if not token:
+        return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
+
+    payload = get_jwt_payload(token)
+    user_id = payload["user_id"]
+    agreements = Agreement.objects.filter(user_id_refer=user_id)
+    serialized_agreements = serial.AgreementSerializer(agreements, many=True)
+    return Response(serialized_agreements.data)
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+@authentication_classes([])
+def get_agreements_open(request):
+    agreements = Agreement.objects.filter(user_id_refer=None)
+    serialized_agreements = serial.AgreementSerializer(agreements, many=True)
+    return Response(serialized_agreements.data)
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+@authentication_classes([])
+def get_agreements_mod(request):
+    query = itemgetter('query')(request.GET)
+    query = query.strip()
+
+    if query == "":
+        agreements = Agreement.objects.all()
+        serialized_agreements = serial.AgreementSerializer(agreements, many=True)
+        response_data = serialized_agreements.data
+    else:
+        agreements = Agreement.objects.filter(id__startswith=query)
+        serialized_agreements = serial.AgreementSerializer(agreements, many=True)
+        response_data = serialized_agreements.data
+
+    return Response(response_data)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+@authentication_classes([])
+def get_agreement(request, id, format=None):
+    account = get_object_or_404(Agreement, id=id)
+    serialized_data = serial.AgreementSerializer(account).data
+    return Response(serialized_data)
+
+@api_view(['PUT'])
+@permission_classes([AllowAny])
+def put_agreement(request, id, format=None):
+    agreement = get_object_or_404(Agreement, id=id)
+    serializer = serial.AgreementSerializer(agreement, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@authentication_classes([])
+def create_agreement(request):
+    agreement_type = request.data.get('type', '')
+    user_refer = request.data.get('user_id_refer', '')
+    desc = request.data.get('description', '')
+    small_desc = request.data.get('small_desc', '')
+    Agreement.objects.create(type=agreement_type,user_id_refer=user_refer, description=desc, small_desc=small_desc)
+    agreements = Agreement.objects.all()
+    serializer = serial.AgreementSerializer(agreements, many=True)
+    return Response(serializer.data)
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 @authentication_classes([])
 def create_account(request):
     token = get_access_token(request)
-    # Добавлен блок для обработки отсутствия токена, вам может потребоваться определить, как обрабатывать эту ситуацию
     if not token:
         return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
 
     payload = get_jwt_payload(token)
     user_id = payload["user_id"]
     card_name = request.data.get('cardName', '')
+    deposit_name = request.data.get('depositName', '')
+    credit_name = request.data.get('creditName', '')
+    save_name = request.data.get('saveName', '')
+    account_names = [card_name, deposit_name, credit_name, save_name]
+    account_name = next((name for name in account_names if name), None)
     currency_name = request.data.get('currencyName', '')
-    account = create_account(card_name,currency_name, user_id=user_id)
-    Account.objects.create(type=account.type,name=account.name, amount=account.amount, number=account.number, currency=account.currency,bic=account.bic,account_status_refer=account.account_status_refer, user_id_refer=account.user_id_refer,icon=account.icon, available=account.available)
+    summ = request.data.get('summ', '')
+    purpose = request.data.get('creditPurpose', '')
+    days = request.data.get('depDays', '')
+    firstName = request.data.get('firstName', '')
+    lastName = request.data.get('lastName', '')
+    card_type = request.data.get('accType', '')
 
-    accounts = Account.objects.all()
-    serializer = serial.AccountSerializer(accounts, many=True)
-    return Response(serializer.data)
+    account_data = create_new_account(account_name, currency_name, card_type, summ, user_id=user_id)
+    ref = Account.objects.get(number=int(account_data["number"]))
+    accId = ref.id
 
-@swagger_auto_schema(
-    method='post',
-    request_body=serial.AccountCardSerializer,
-    responses={201: openapi.Response('Successful response', serial.AccountCardSerializer)},
-)
-@api_view(['POST'])
-@permission_classes([AllowAny])
-@authentication_classes([])
-def post_card(request, format=None):
-    serializer = serial.AccountCardSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    if card_type=="card":
+        card_data = create_new_card(firstName, lastName, ref)
+    elif card_type=="credit":
+        card_data = create_new_credit(purpose, ref)
+    elif card_type=="deposit":
+        card_data = create_new_deposit(days, ref)
+    elif card_type=="save":
+        card_data = create_new_save(ref)
 
-@swagger_auto_schema(
-    method='post',
-    request_body=serial.AccountCreditSerializer,
-    responses={201: openapi.Response('Successful response', serial.AccountCreditSerializer)},
-)
-@api_view(['POST'])
-@permission_classes([AllowAny])
-@authentication_classes([])
-def post_credit(request, format=None):
-    serializer = serial.AccountCreditSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    if accId is None:
+        return JsonResponse({'error': 'Missing required fields in JSON data'}, status=400)
+    applic=get_application_by_user(user_id)
+    if applic is None:
+        latest = Applications.objects.last()
+        applic = Applications(id=latest.id + 1, user_id=user_id, agreement_refer=1, status=1)
+        app_id = applic.id
+        applic.save()
+        appAccs = AccountApplication(application_id=latest.id + 1, account_id=accId)
+        appAccs.save()
+    else:
+        app_id = applic.id
+        appAccs = AccountApplication(application_id=app_id, account_id=accId)
+        appAccs.save()
+    update_number(account_id=accId, application_id=app_id)
 
-@swagger_auto_schema(
-    method='post',
-    request_body=serial.AccountDepositSerializer,
-    responses={201: openapi.Response('Successful response', serial.AccountDepositSerializer)},
-)
-@api_view(['POST'])
-@permission_classes([AllowAny])
-@authentication_classes([])
-def post_deposit(request, format=None):
-    serializer = serial.AccountDepositSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    return Response({'message': 'Success'}, status=status.HTTP_201_CREATED)
 
-@swagger_auto_schema(
-    method='post',
-    request_body=serial.AccountSaveSerializer,
-    responses={201: openapi.Response('Successful response', serial.AccountSaveSerializer)},
-)
-@api_view(['POST'])
-@permission_classes([AllowAny])
-@authentication_classes([])
-def post_save(request, format=None):
-    serializer = serial.AccountSaveSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(['GET'])
 def get_account(request, id, format=None):
@@ -196,7 +301,7 @@ def get_account(request, id, format=None):
     responses={200: openapi.Response('Successful response', serial.AccountCardSerializer)},
 )
 @api_view(['PUT'])
-@permission_classes([IsManager])
+@permission_classes([AllowAny])
 def put_detail(request, id, format=None):
     account = get_object_or_404(Account, id=id)
     if account.type == "Карта":
@@ -232,33 +337,25 @@ def delete_detail(request, id, format=None):
     resp = getAccounts(user_id)
     return Response(resp)
 
-@swagger_auto_schema(
-    method='post',
-    request_body=serial.AccountApplicationSerializer,
-    responses={201: openapi.Response('Successful response', serial.AccountApplicationSerializer)},
-)
-@api_view(['POST'])
-def add_account_to_application(request, accId):
-    user_id = 13
-    if accId is None:
-        return JsonResponse({'error': 'Missing required fields in JSON data'}, status=400)
-    try:
-        falseStatus = Applications.objects.get(status=1,user_id=user_id)
-        first_app = falseStatus.first()
-        app_id = first_app.id
-    except:
-        app_id = -1
-    if app_id != -1:
-        appAccs = AccountApplication(application_id=app_id, account_id=accId)
-        appAccs.save()
-    else:
-        latest = Applications.objects.last()
-        applic = Applications(id=latest.id+1,user_id=user_id, agreement_refer=1, status=1)
-        applic.save()
-        appAccs = AccountApplication(application_id=latest.id+1, account_id=accId)
-        appAccs.save()
 
-    return Response({'message': 'Success'}, status=status.HTTP_201_CREATED)
+@api_view(['GET'])
+@permission_classes([IsManager])
+@authentication_classes([])
+def get_applications_mod(request, format=None):
+    applications = Applications.objects.all()
+    serialized_applications = serial.ApplicationsSerializer(applications, many=True).data
+
+    for application in serialized_applications:
+        account_applications = AccountApplication.objects.filter(application_id=application['id'])
+        vals = account_applications.values()
+        account_ids = [item['account_id'] for item in vals]
+        if len(account_ids) > 0:
+            accs = accsList(account_ids)
+        else:
+            accs = []
+        application['accounts'] = accs
+
+    return Response(serialized_applications)
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -281,29 +378,6 @@ def get_applications(request, format=None):
         application['accounts'] = accs
 
     return Response(serialized_applications)
-
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def get_application_draft(request, format=None):
-    token = get_access_token(request)
-    payload = get_jwt_payload(token)
-    user_id = payload["user_id"]
-    application = get_object_or_404(Applications, status=1, user_id=user_id)
-
-    if request.method == 'GET':
-        serialized_application = serial.ApplicationsSerializer(application).data
-
-        account_applications = AccountApplication.objects.filter(application_id=application.id)
-        vals = account_applications.values()
-        account_ids = [item['account_id'] for item in vals]
-        if len(account_ids) > 0:
-            accs = accsList(account_ids)
-        else:
-            accs = []
-        serialized_application['accounts'] = accs
-
-        return Response(serialized_application)
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -331,8 +405,12 @@ def get_application(request, pk, format=None):
     responses={200: openapi.Response('Successful response', serial.ApplicationsSerializer)},
 )
 @api_view(['PUT'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsManager])
+@authentication_classes([])
 def put_application(request, pk, format=None):
+    if not request.user.is_moderator:  # Проверка прав модератора
+        return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
     application = get_object_or_404(Applications, id=pk)
     serializer = serial.ApplicationsSerializer(application, data=request.data, partial=True)
     if serializer.is_valid():
@@ -347,9 +425,8 @@ def put_application(request, pk, format=None):
 def delete_application(request, id, format=None):
     applications_to_delete = AccountApplication.objects.filter(application_id=id)
     applications_to_delete.delete()
-    application = get_object_or_404(Applications, id=id)
+    application = Applications.objects.filter(id=id)
     application.delete()
-    application.save()
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 @api_view(['DELETE'])
@@ -365,7 +442,7 @@ def delete_app_acc(request, acc_id, app_id, format=None):
     responses={200: openapi.Response('Successful response', serial.AccountApplicationSerializer)},
 )
 @api_view(['PUT'])
-@permission_classes([IsManager])
+@permission_classes([AllowAny])
 def put_app_acc(request, acc_id, app_id, format=None):
     app_acc = get_object_or_404(AccountApplication, account_id=acc_id, application_id=app_id)
     serializer = serial.AccountApplicationSerializer(app_acc, data=request.data, partial=True)
@@ -408,27 +485,34 @@ def put_create_status(request, id, format=None):
 )
 @api_view(['PUT'])
 @permission_classes([IsManager])
-def put_mod_status(request, application_id, format=None):
-    if not Applications.objects.filter(pk=application_id).exists():
+@authentication_classes([])
+def put_mod_status(request, id, format=None):
+    if not Applications.objects.filter(pk=id).exists():
         return Response(status=status.HTTP_404_NOT_FOUND)
 
-    request_status = request.data["status"]  # Статус, на который мы хотим поменять
-
+    request_status = request.data["status"]
     if request_status in [1, 5]:
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-    application = Applications.objects.get(pk=application_id)
+    application = Applications.objects.get(pk=id)
 
-    application_status = application.status  # Текущий статус заявки
+    application_status = application.status
 
     if application_status in [3, 4, 5]:
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
+    # Обновление статуса заявки
     application.status = request_status
     application.save()
+    if request_status == 3:
+        accounts = Account.objects.filter(accountapplication__application_id=id)
+        accounts.update(available=True)
+        accounts.save()
 
     serializer = serial.ApplicationsSerializer(application, many=False)
     return Response(serializer.data)
+
+
 @api_view(["POST"])
 @permission_classes([AllowAny])
 @authentication_classes([])
@@ -452,7 +536,7 @@ def login(request):
         "user_id": user.id,
         "full_name": user.full_name,
         "email": user.email,
-        "is_staff": user.is_staff,
+        "is_moderator": user.is_moderator,
         "access_token": access_token
     }
     access_token_lifetime = settings.ACCESS_TOKEN_LIFETIME
@@ -463,7 +547,7 @@ def login(request):
         "user_id": user.id,
         "full_name": user.full_name,
         "email": user.email,
-        "is_staff": user.is_staff,
+        "is_moderator": user.is_moderator,
         "access_token": access_token
     }
     response = Response(response_data, status=status.HTTP_201_CREATED)
@@ -508,7 +592,8 @@ def check(request):
 @permission_classes([AllowAny])
 @authentication_classes([])
 def refresh(request):
-    refresh_token = get_access_token(request)
+    refresh_token = get_refresh_token(request)
+    print(refresh_token)
     if not refresh_token:
         return Response({'error': 'Refresh token not provided'}, status=400)
 
@@ -578,18 +663,3 @@ def getIcon(request, type):
         return response
     except ResponseError as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    #
-    # try:
-    #     # Получение списка объектов в бакете
-    #     objects = minio_client.list_objects(minio_bucket_name, recursive=True)
-    #
-    #     # Собираем имена файлов (ключей) в список
-    #     image_names = [obj.object_name for obj in objects]
-    #     if not image_names:
-    #         return Response(status=status.HTTP_400_BAD_REQUEST)
-    #
-    #     return Response(image_names, status=status.HTTP_200_OK)
-    # except ResponseError as e:
-    #     return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    #

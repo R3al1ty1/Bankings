@@ -60,34 +60,40 @@ class Account(models.Model):
     available = models.BooleanField(blank=True, null=True)
     delete_date = models.DateField(blank=True, null=True)
 
-    def availability_status(self):
-        account_status = AccountStatus.objects.get(id=Account.objects.get(name=self.name).account_status_refer)
-        frozen_status = account_status.frozen
-        return "Заморожен" if not frozen_status else "Доступен"
-
-    def availability_display(self):
-        account_status = AccountStatus.objects.get(id=Account.objects.get(name=self.name).account_status_refer)
-        print(account_status.frozen)
-        return account_status.frozen
-
     class Meta:
         managed = False
         db_table = 'account'
+        indexes = [
+            models.Index(fields=['type', 'name', ]),
+            models.Index(fields=['number', ])
+        ]
 
-    def get_currency_symbol(self):
-        currencyDct = {810: "₽", 840: "$", 978: "€"}
-        return currencyDct.get(self.currency, '')
+    #
+    # def availability_status(self):
+    #     account_status = AccountStatus.objects.get(id=Account.objects.get(name=self.name).account_status_refer)
+    #     frozen_status = account_status.frozen
+    #     return "Заморожен" if not frozen_status else "Доступен"
+    #
+    # def availability_display(self):
+    #     account_status = AccountStatus.objects.get(id=Account.objects.get(name=self.name).account_status_refer)
+    #     print(account_status.frozen)
+    #     return account_status.frozen
 
-    def get_display_amount(self):
-        if int(self.amount) == self.amount:
-            return str(int(self.amount))
-        else:
-            return str(self.amount)
+    # def get_currency_symbol(self):
+    #     currencyDct = {810: "₽", 840: "$", 978: "€"}
+    #     return currencyDct.get(self.currency, '')
+    #
+    # def get_display_amount(self):
+    #     if int(self.amount) == self.amount:
+    #         return str(int(self.amount))
+    #     else:
+    #         return str(self.amount)
 
 
 class AccountApplication(models.Model):
     application = models.OneToOneField('Applications', models.DO_NOTHING)
     account = models.OneToOneField(Account, models.DO_NOTHING)
+    number = models.BigIntegerField(blank=True, null=True)
 
     class Meta:
         managed = False
@@ -100,6 +106,20 @@ class AccountStatus(models.Model):
     class Meta:
         managed = False
         db_table = 'account_status'
+
+class Agreement(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    type = models.CharField(max_length=40)
+    user_id_refer = models.BigIntegerField(blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    small_desc = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'agreement'
+
+
+
 
 
 

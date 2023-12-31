@@ -1,12 +1,13 @@
 from rest_framework import serializers
-from .models import Account, AccountApplication, AccountStatus,  Applications, CardTerms, CreditTerms, \
-    DepositTerms, SaveTerms, CustomUser
+from .models import Account, AccountApplication, AccountStatus, Applications, CardTerms, CreditTerms, \
+    DepositTerms, SaveTerms, CustomUser, Agreement
 
 
 class AccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = Account
-        fields = ['id', 'type', 'name', 'amount', 'number', 'currency', 'bic', 'account_status_refer', 'user_id_refer', 'icon', 'available']
+        fields = ['id', 'type', 'name', 'amount', 'number', 'currency', 'bic', 'account_status_refer', 'user_id_refer', 'icon', 'available', 'delete_date']
+
 
 class CardTermsSerializer(serializers.ModelSerializer):
     class Meta:
@@ -63,10 +64,15 @@ class AccountSaveSerializer(serializers.ModelSerializer):
         fields = ['id', 'type', 'name', 'amount', 'number', 'currency', 'bic', 'account_status_refer', 'user_id_refer',
                   'icon', 'available', 'save']
 
+class AgreementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Agreement
+        fields = ['id', 'type', 'user_id_refer', 'description', 'small_desc']
+
 class AccountApplicationSerializer(serializers.ModelSerializer):
     class Meta:
         model = AccountApplication
-        fields = ['id', 'application_id', 'account_id', 'account']
+        fields = ['id', 'application_id', 'account_id', 'account', 'number']
 
 class AccountApplicationSmallSerializer(serializers.ModelSerializer):
     account = AccountSerializer()

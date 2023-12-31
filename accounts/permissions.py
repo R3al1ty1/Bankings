@@ -41,4 +41,4 @@ class IsManager(BasePermission):
         except Exception as e:
             return False
 
-        return user.is_manager
+        return user.is_moderator
