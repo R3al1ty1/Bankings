@@ -37,7 +37,7 @@ def update_number(account_id, application_id):
         "Authorization": "secret-async-key"
     }
 
-    response = requests.post("http://localhost:8080/set_status", json=payload, headers=headers)
+    response = requests.post("http://localhost:8080/get_number", json=payload, headers=headers)
 
     if response.status_code == 200:
         print("Запрос успешно отправлен")
