@@ -24,6 +24,24 @@ def generate_unique_id():
     return max_id + 1 if max_id is not None else 1
 
 
+def make_room(exhibition_id):
+    exhibition = Exhibitions.objects.get(application_id=exhibition_id)
+
+    payload = {
+        "exhibition_id": exhibition.exhibition_id,
+        "room": exhibition.room,
+    }
+    headers = {
+        "Authorization": "secret-async-key"
+    }
+
+    response = requests.post("http://localhost:8080/get_room", json=payload, headers=headers)
+
+    if response.status_code == 200:
+        print("Запрос успешно отправлен")
+    else:
+        print(f"Ошибка при отправке запроса: {response.status_code}")
+
 def update_number(account_id, application_id):
     accApp = AccountApplication.objects.get(account_id=account_id, application_id=application_id)
 
@@ -37,7 +55,7 @@ def update_number(account_id, application_id):
         "Authorization": "secret-async-key"
     }
 
-    response = requests.post("http://localhost:8080/set_status", json=payload, headers=headers)
+    response = requests.post("http://localhost:8080/get_number", json=payload, headers=headers)
 
     if response.status_code == 200:
         print("Запрос успешно отправлен")

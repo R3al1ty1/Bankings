@@ -120,9 +120,10 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         is_superuser = validated_data.pop('is_superuser', False)
 
         user = CustomUser.objects.create(
-            email=validated_data['email'],
-            full_name=validated_data['full_name']
+            full_name=validated_data['full_name'],
+            email=validated_data['email']
         )
+
 
         user.set_password(validated_data['password'])
 
