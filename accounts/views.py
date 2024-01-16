@@ -431,16 +431,13 @@ def put_application(request, pk, format=None):
 
 @api_view(['DELETE'])
 @permission_classes([AllowAny])
-@authentication_classes([])
 def delete_application(request, id, format=None):
-    applications_to_delete = AccountApplication.objects.filter(application_id=id)
-    applications_to_delete.delete()
     application = Applications.objects.filter(id=id)
-    application.delete()
+    application.status = 5
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 @api_view(['DELETE'])
-@permission_classes([IsManager])
+@permission_classes([AllowAny])
 def delete_app_acc(request, acc_id, app_id, format=None):
     app_acc = get_object_or_404(AccountApplication, account_id=acc_id, application_id=app_id)
     app_acc.delete()
