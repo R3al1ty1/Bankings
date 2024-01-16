@@ -1,6 +1,6 @@
 import json
 
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from urllib.parse import urlparse, urlsplit, unquote
 from xmlrpc.client import ResponseError
 
@@ -22,7 +22,7 @@ from . import settings
 from .permissions import IsAuthenticated, IsManager
 from .tasks import delete_account
 from .funcs import getAccounts, typeCheck, accsList, create_new_account, getAccountsMod, update_number, create_new_card, \
-    create_new_credit, create_new_deposit, create_new_save, get_application_by_user
+    create_new_credit, create_new_deposit, create_new_save, get_application_by_user, make_room
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from minio import Minio
@@ -68,7 +68,7 @@ def get_accounts(request):
 @permission_classes([AllowAny])
 @authentication_classes([])
 def updateNumber(request):
-    update_number(73,76)
+    update_number(76)
     return Response(status=status.HTTP_200_OK)
 
 @api_view(['PUT'])
@@ -346,6 +346,8 @@ def get_applications_mod(request, format=None):
     serialized_applications = serial.ApplicationsSerializer(applications, many=True).data
 
     for application in serialized_applications:
+        user = CustomUser.objects.get(id=application['user'])
+        application['user_email'] = user.email
         account_applications = AccountApplication.objects.filter(application_id=application['id'])
         vals = account_applications.values()
         account_ids = [item['account_id'] for item in vals]
@@ -364,7 +366,7 @@ def get_applications(request, format=None):
     token = get_access_token(request)
     payload = get_jwt_payload(token)
     user_id = payload["user_id"]
-    applications = Applications.objects.filter(user_id=user_id).exclude(status__in=[5])
+    applications = Applications.objects.filter(user_id=user_id).exclude(status__in=[1,5])
     serialized_applications = serial.ApplicationsSerializer(applications, many=True).data
 
     for application in serialized_applications:
@@ -398,6 +400,14 @@ def get_application(request, pk, format=None):
         serialized_application['accounts'] = accs
 
         return Response(serialized_application)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+@authentication_classes([])
+def get_apps_accs(request, pk, format=None):
+    apps_accs = AccountApplication.objects.filter(application_id=pk)
+    serialized_apps_accs = serial.AccountApplicationSerializer(apps_accs, many=True).data
+    return Response(serialized_apps_accs)
 
 @swagger_auto_schema(
     method='put',
@@ -471,8 +481,11 @@ def put_create_status(request, id, format=None):
 
     if application_status == 5:
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    today = datetime.now().date()
 
+    formatted_today = today.strftime("%Y-%m-%d")
     application.status = request_status
+    application.creation_date = formatted_today
     application.save()
 
     serializer = serial.ApplicationsSerializer(application, many=False)
@@ -507,7 +520,6 @@ def put_mod_status(request, id, format=None):
     if request_status == 3:
         accounts = Account.objects.filter(accountapplication__application_id=id)
         accounts.update(available=True)
-        accounts.save()
 
     serializer = serial.ApplicationsSerializer(application, many=False)
     return Response(serializer.data)

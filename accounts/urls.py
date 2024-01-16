@@ -67,6 +67,7 @@ urlpatterns = [
     path(r'api/app_mod_status/<int:id>/put/', views.put_mod_status, name='app-mod-put'),
 
     #м-м
+    path(r'api/apps/accs/<int:pk>/get/', views.get_apps_accs, name='apps-accs-get'),
     path(r'api/apps_accs/<int:acc_id>/<int:app_id>/delete/', views.delete_app_acc, name='app-acc-delete'),
     path(r'api/apps_accs/<int:acc_id>/<int:app_id>/put/', views.put_app_acc, name='app-acc-put'),
 
