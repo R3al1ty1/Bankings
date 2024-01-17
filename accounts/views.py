@@ -144,10 +144,8 @@ def get_accounts_search(request):
             else:
                 resp = Account.objects.filter(name__icontains=query, available=True, user_id_refer=user_id)
             serializer = typeCheck(resp)
-
-            serialized_data = serializer.data
-            serialized_data.append({"appId": appId})
-            response = Response(serialized_data)
+            serializer.append({"appId": appId})
+            response = Response(serializer)
 
     return response
 
