@@ -217,10 +217,16 @@ def put_agreement(request, id, format=None):
 @authentication_classes([])
 def create_agreement(request):
     agreement_type = request.data.get('type', '')
+    flag = True
     user_refer = request.data.get('user_id_refer', '')
+    if user_refer == '':
+        flag = False
     desc = request.data.get('description', '')
     small_desc = request.data.get('small_desc', '')
-    Agreement.objects.create(type=agreement_type,user_id_refer=user_refer, description=desc, small_desc=small_desc)
+    if flag:
+        Agreement.objects.create(type=agreement_type,user_id_refer=user_refer, description=desc, small_desc=small_desc)
+    else:
+        Agreement.objects.create(type=agreement_type, description=desc, small_desc=small_desc)
     agreements = Agreement.objects.all()
     serializer = serial.AgreementSerializer(agreements, many=True)
     return Response(serializer.data)
