@@ -153,15 +153,8 @@ def get_accounts_search(request):
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
-@authentication_classes([])
 def get_agreements(request):
-    token = get_access_token(request)
-    if not token:
-        return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
-
-    payload = get_jwt_payload(token)
-    user_id = payload["user_id"]
-    agreements = Agreement.objects.filter(user_id_refer=user_id)
+    agreements = Agreement.objects.all()
     serialized_agreements = serial.AgreementSerializer(agreements, many=True)
     return Response(serialized_agreements.data)
 
@@ -353,15 +346,21 @@ def get_applications_mod(request, format=None):
         user = CustomUser.objects.get(id=application['user'])
         application['user_email'] = user.email
         account_applications = AccountApplication.objects.filter(application_id=application['id'])
+        apps_accs = AccountApplication.objects.filter(application_id=application['id'])
+        numbers = [app_acc.number for app_acc in apps_accs if app_acc.number is not None]
         vals = account_applications.values()
         account_ids = [item['account_id'] for item in vals]
+
         if len(account_ids) > 0:
             accs = accsList(account_ids)
+            for acc, number in zip(accs, numbers):
+                acc['number'] = number
+            application['accounts'] = accs
         else:
-            accs = []
-        application['accounts'] = accs
+            application['accounts'] = []
 
     return Response(serialized_applications)
+
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -375,21 +374,28 @@ def get_applications(request, format=None):
 
     for application in serialized_applications:
         account_applications = AccountApplication.objects.filter(application_id=application['id'])
+        apps_accs = AccountApplication.objects.filter(application_id=application['id'])
+        numbers = [app_acc.number for app_acc in apps_accs if app_acc.number is not None]
         vals = account_applications.values()
         account_ids = [item['account_id'] for item in vals]
         if len(account_ids) > 0:
             accs = accsList(account_ids)
+            for acc, number in zip(accs, numbers):
+                acc['number'] = number
+            application['accounts'] = accs
         else:
-            accs = []
-        application['accounts'] = accs
+            application['accounts'] = []
 
     return Response(serialized_applications)
+
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
 @authentication_classes([])
 def get_application(request, pk, format=None):
     application = get_object_or_404(Applications, id=pk)
+    apps_accs = AccountApplication.objects.filter(application_id=pk)
+    numbers = [app_acc.number for app_acc in apps_accs if app_acc.number is not None]
 
     if request.method == 'GET':
         serialized_application = serial.ApplicationsSerializer(application).data
@@ -397,21 +403,17 @@ def get_application(request, pk, format=None):
         account_applications = AccountApplication.objects.filter(application_id=application.id)
         vals = account_applications.values()
         account_ids = [item['account_id'] for item in vals]
+
         if len(account_ids) > 0:
             accs = accsList(account_ids)
+            for acc, number in zip(accs, numbers):
+                acc['number'] = number
+            serialized_application['accounts'] = accs
+
         else:
-            accs = []
-        serialized_application['accounts'] = accs
+            serialized_application['accounts'] = []
 
-        return Response(serialized_application)
-
-@api_view(['GET'])
-@permission_classes([AllowAny])
-@authentication_classes([])
-def get_apps_accs(request, pk, format=None):
-    apps_accs = AccountApplication.objects.filter(application_id=pk)
-    serialized_apps_accs = serial.AccountApplicationSerializer(apps_accs, many=True).data
-    return Response(serialized_apps_accs)
+    return Response(serialized_application)
 
 @swagger_auto_schema(
     method='put',
