@@ -29,14 +29,14 @@ def freezeAgreement(request, Agreement_name):
 def GetAgreements(request):
     Agreement_query = request.GET.get('Agreement_url', '')
     if Agreement_query == "":
-        return render(request, 'Accounts.html', {'Agreements': Agreement.objects.all()})
+        return render(request, 'Agreements.html', {'Agreements': Agreement.objects.all()})
     else:
         found = Agreement.objects.filter(
             Q(name__icontains=Agreement_query) | Q(type__icontains=Agreement_query)
         )
-        return render(request, 'Accounts.html', {'Agreements': found, 'Agreement_url': Agreement_query})
+        return render(request, 'Agreements.html', {'Agreements': found, 'Agreement_url': Agreement_query})
 
 
 def GetAgreement(request, name):
     Agreement = Agreement.objects.get(name=name)
-    return render(request, 'account.html', {'Agreement': Agreement, 'card_terms': card_terms})
+    return render(request, 'Agreement.html', {'Agreement': Agreement, 'card_terms': card_terms})
