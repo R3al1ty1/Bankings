@@ -78,6 +78,7 @@ urlpatterns = [
     path("api/logout/", views.logout, name="logout"),
 
     #разное
+    path(r'api/number/<int:acc_id>/<int:app_id>/put/', views.put_number, name='put-number'),
     path(r'api/icon/<str:type>/', views.getIcon, name='get-icons'),
     path('api/test/', views.updateNumber, name='test'),
     path(r'api/accounts/async/<int:id>/put/', views.put_detail_async, name='accounts-put-async'),

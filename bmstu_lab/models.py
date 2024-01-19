@@ -125,9 +125,9 @@ class Agreement(models.Model):
 
 class Applications(models.Model):
     id = models.BigAutoField(primary_key=True)
-    creation_date = models.DateField(blank=True, null=True)
-    procession_date = models.DateField(blank=True, null=True)
-    completion_date = models.DateField(blank=True, null=True)
+    creation_date = models.DateTimeField(blank=True, null=True)
+    procession_date = models.DateTimeField(blank=True, null=True)
+    completion_date = models.DateTimeField(blank=True, null=True)
     user = models.ForeignKey('CustomUser', models.DO_NOTHING)
     agreement_refer = models.BigIntegerField(unique=True)
     status = models.IntegerField(blank=True, null=True)

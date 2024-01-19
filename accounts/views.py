@@ -339,7 +339,7 @@ def delete_detail(request, id, format=None):
 @permission_classes([IsManager])
 @authentication_classes([])
 def get_applications_mod(request, format=None):
-    applications = Applications.objects.all()
+    applications = Applications.objects.all().exclude(status__in=[1,5])
     serialized_applications = serial.ApplicationsSerializer(applications, many=True).data
 
     for application in serialized_applications:
@@ -466,6 +466,21 @@ def put_app_acc(request, acc_id, app_id, format=None):
 
 @swagger_auto_schema(
     method='put',
+    request_body=serial.AccountApplicationSerializer,
+    responses={200: openapi.Response('Successful response', serial.AccountApplicationSerializer)},
+)
+@api_view(['PUT'])
+@permission_classes([AllowAny])
+def put_number(request, acc_id, app_id, format=None):
+    app_acc = get_object_or_404(AccountApplication, account_id=acc_id, application_id=app_id)
+    serializer = serial.AccountApplicationSerializer(app_acc, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@swagger_auto_schema(
+    method='put',
     responses={200: openapi.Response('Successful response', serial.ApplicationsSerializer)},
 )
 @api_view(['PUT'])
@@ -484,9 +499,9 @@ def put_create_status(request, id, format=None):
 
     if application_status == 5:
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-    today = datetime.now().date()
+    today = datetime.now()
 
-    formatted_today = today.strftime("%Y-%m-%d")
+    formatted_today = today.strftime("%Y-%m-%d %H:%M")
     application.status = request_status
     application.creation_date = formatted_today
     application.save()
