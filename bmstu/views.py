@@ -39,4 +39,4 @@ def GetAgreements(request):
 
 def GetAgreement(request, name):
     Agreement = Agreement.objects.get(name=name)
-    return render(request, 'card.html', {'Agreement': Agreement, 'card_terms': card_terms})
+    return render(request, 'account.html', {'Agreement': Agreement, 'card_terms': card_terms})
