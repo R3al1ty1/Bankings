@@ -91,11 +91,13 @@ class Account(models.Model):
 
 
 class AccountApplication(models.Model):
-    application = models.OneToOneField('Applications', models.DO_NOTHING)
-    account = models.OneToOneField(Account, models.DO_NOTHING)
+    id = models.BigAutoField(primary_key=True)
+    application = models.ForeignKey('Applications', models.DO_NOTHING)
+    account = models.ForeignKey(Account, models.DO_NOTHING)
     number = models.BigIntegerField(blank=True, null=True)
+    agreement_id = models.BigIntegerField()
 
-    class Meta:
+class Meta:
         managed = False
         db_table = 'account_application'
 

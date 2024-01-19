@@ -225,7 +225,7 @@ def create_agreement(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 @authentication_classes([])
-def create_account(request):
+def add_agreement(request):
     token = get_access_token(request)
     if not token:
         return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -245,6 +245,7 @@ def create_account(request):
     firstName = request.data.get('firstName', '')
     lastName = request.data.get('lastName', '')
     card_type = request.data.get('accType', '')
+    agrId = request.data.get('agreement', '')
 
     account_data = create_new_account(account_name, currency_name, card_type, summ, user_id=user_id)
     ref = Account.objects.get(number=int(account_data["number"]))
@@ -267,15 +268,33 @@ def create_account(request):
         applic = Applications(id=latest.id + 1, user_id=user_id, agreement_refer=1, status=1)
         app_id = applic.id
         applic.save()
-        appAccs = AccountApplication(application_id=latest.id + 1, account_id=accId)
+        appAccs = AccountApplication(application_id=latest.id + 1, account_id=accId, agreement_id=agrId)
         appAccs.save()
     else:
         app_id = applic.id
-        appAccs = AccountApplication(application_id=app_id, account_id=accId)
+        appAccs = AccountApplication(application_id=app_id, account_id=accId, agreement_id=agrId)
         appAccs.save()
     update_number(account_id=accId, application_id=app_id)
 
     return Response({'message': 'Success'}, status=status.HTTP_201_CREATED)
+
+@api_view(['DELETE'])
+@permission_classes([IsManager])
+@authentication_classes([])
+def delete_agreement(request, id, format=None):
+    token = get_access_token(request)
+    if not token:
+        return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
+
+    payload = get_jwt_payload(token)
+    user_id = payload["user_id"]
+    agreement = get_object_or_404(Agreement, id=id)
+    agreement.available = False
+    agreement.delete_date = date.today()
+    agreement.save()
+
+    resp = getAccounts(user_id)
+    return Response(resp)
 
 
 

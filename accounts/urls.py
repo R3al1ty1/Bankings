@@ -42,7 +42,6 @@ urlpatterns = [
 
     #счета
     path(r'api/accounts/', views.get_accounts, name='accounts-list'),
-    path(r'api/accounts/create', views.create_account, name='accounts-create'),
     path(r'api/accounts/search', views.get_accounts_search, name='accounts-list-search'),
     path(r'api/accounts/mod', views.get_accounts_mod, name='accounts-list-mod'),
     path(r'api/accounts/<int:id>/', views.get_account, name='accounts-detail'),
@@ -51,11 +50,13 @@ urlpatterns = [
 
     #договоры
     path(r'api/agreements/', views.get_agreements, name='agreements-list-all'),
+    path(r'api/agreements/add', views.add_agreement, name='add-agreement'),
     path(r'api/agreements/open/', views.get_agreements_open, name='agreements-list-open'),
     path(r'api/agreements/<int:id>/', views.get_agreement, name='agreement-detail'),
     path(r'api/agreements/mod', views.get_agreements_mod, name='agreements-list-mod'),
     path(r'api/agreements/<int:id>/put/', views.put_agreement, name='agreement-put'),
     path(r'api/agreements/post/', views.create_agreement, name='agreement-post'),
+    path(r'api/agreements/<int:id>/delete/', views.delete_agreement, name='agreement-delete'),
 
     #заявки
     path(r'api/applications/', views.get_applications, name='applications-list'),

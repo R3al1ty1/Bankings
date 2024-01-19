@@ -72,7 +72,7 @@ class AgreementSerializer(serializers.ModelSerializer):
 class AccountApplicationSerializer(serializers.ModelSerializer):
     class Meta:
         model = AccountApplication
-        fields = ['id', 'application_id', 'account_id', 'account', 'number']
+        fields = ['id', 'application_id', 'account_id', 'account', 'number', 'agreement_id']
 
 class AccountApplicationSmallSerializer(serializers.ModelSerializer):
     account = AccountSerializer()
