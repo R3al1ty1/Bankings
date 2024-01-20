@@ -91,13 +91,12 @@ class Account(models.Model):
 
 
 class AccountApplication(models.Model):
-    id = models.BigAutoField(primary_key=True)
-    application = models.ForeignKey('Applications', models.DO_NOTHING)
-    account = models.ForeignKey(Account, models.DO_NOTHING)
+    application = models.OneToOneField('Applications', models.DO_NOTHING)
+    account = models.OneToOneField(Account, models.DO_NOTHING)
     number = models.BigIntegerField(blank=True, null=True)
-    agreement_id = models.BigIntegerField()
+    agreement_id = models.BigIntegerField(blank=True, null=True)
 
-class Meta:
+    class Meta:
         managed = False
         db_table = 'account_application'
 
@@ -112,9 +111,9 @@ class AccountStatus(models.Model):
 class Agreement(models.Model):
     id = models.BigAutoField(primary_key=True)
     type = models.CharField(max_length=40)
-    user_id_refer = models.BigIntegerField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     small_desc = models.TextField(blank=True, null=True)
+    available = models.BooleanField()
 
     class Meta:
         managed = False
@@ -133,6 +132,7 @@ class Applications(models.Model):
     user = models.ForeignKey('CustomUser', models.DO_NOTHING)
     agreement_refer = models.BigIntegerField(unique=True)
     status = models.IntegerField(blank=True, null=True)
+    moderator = models.ForeignKey('CustomUser', models.DO_NOTHING, db_column='moderator',related_name='applications_moderator_set', blank=True, null=True)
 
     class Meta:
         managed = False
@@ -343,7 +343,6 @@ class SaveTerms(models.Model):
 #     class Meta:
 #             managed = False
 #             db_table = 'users'
-
 
 
 

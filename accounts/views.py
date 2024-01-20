@@ -154,15 +154,7 @@ def get_accounts_search(request):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def get_agreements(request):
-    agreements = Agreement.objects.all()
-    serialized_agreements = serial.AgreementSerializer(agreements, many=True)
-    return Response(serialized_agreements.data)
-
-@api_view(["GET"])
-@permission_classes([AllowAny])
-@authentication_classes([])
-def get_agreements_open(request):
-    agreements = Agreement.objects.filter(user_id_refer=None)
+    agreements = Agreement.objects.filter(available=True)
     serialized_agreements = serial.AgreementSerializer(agreements, many=True)
     return Response(serialized_agreements.data)
 
@@ -246,7 +238,6 @@ def add_agreement(request):
     lastName = request.data.get('lastName', '')
     card_type = request.data.get('accType', '')
     agrId = request.data.get('agreement', '')
-
     account_data = create_new_account(account_name, currency_name, card_type, summ, user_id=user_id)
     ref = Account.objects.get(number=int(account_data["number"]))
     accId = ref.id
@@ -290,11 +281,11 @@ def delete_agreement(request, id, format=None):
     user_id = payload["user_id"]
     agreement = get_object_or_404(Agreement, id=id)
     agreement.available = False
-    agreement.delete_date = date.today()
     agreement.save()
 
-    resp = getAccounts(user_id)
-    return Response(resp)
+    agreements = Agreement.objects.filter(available=True)
+    serialized_agreements = serial.AgreementSerializer(agreements, many=True)
+    return Response(serialized_agreements.data)
 
 
 
@@ -483,20 +474,24 @@ def put_app_acc(request, acc_id, app_id, format=None):
         return Response(serializer.data)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@swagger_auto_schema(
-    method='put',
-    request_body=serial.AccountApplicationSerializer,
-    responses={200: openapi.Response('Successful response', serial.AccountApplicationSerializer)},
-)
+
 @api_view(['PUT'])
 @permission_classes([AllowAny])
+@authentication_classes([])
 def put_number(request, acc_id, app_id, format=None):
+    secret_key = request.data.get('secret_key', None)
+    if secret_key != 'secret-async-key':
+        return Response({'error': 'Invalid secret key'}, status=status.HTTP_403_FORBIDDEN)
+
     app_acc = get_object_or_404(AccountApplication, account_id=acc_id, application_id=app_id)
     serializer = serial.AccountApplicationSerializer(app_acc, data=request.data, partial=True)
+
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data)
+
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 @swagger_auto_schema(
     method='put',
@@ -537,6 +532,9 @@ def put_create_status(request, id, format=None):
 @permission_classes([IsManager])
 @authentication_classes([])
 def put_mod_status(request, id, format=None):
+    token = get_access_token(request)
+    payload = get_jwt_payload(token)
+    user_id = payload["user_id"]
     if not Applications.objects.filter(pk=id).exists():
         return Response(status=status.HTTP_404_NOT_FOUND)
 
@@ -551,8 +549,9 @@ def put_mod_status(request, id, format=None):
     if application_status in [3, 4, 5]:
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-    # Обновление статуса заявки
+    user = CustomUser.objects.get(id=user_id)
     application.status = request_status
+    application.moderator = user
     application.save()
     if request_status == 3:
         accounts = Account.objects.filter(accountapplication__application_id=id)

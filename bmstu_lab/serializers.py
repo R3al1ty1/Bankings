@@ -67,7 +67,7 @@ class AccountSaveSerializer(serializers.ModelSerializer):
 class AgreementSerializer(serializers.ModelSerializer):
     class Meta:
         model = Agreement
-        fields = ['id', 'type', 'user_id_refer', 'description', 'small_desc']
+        fields = ['id', 'type', 'description', 'small_desc', 'available']
 
 class AccountApplicationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -90,7 +90,7 @@ class ApplicationsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Applications
-        fields = ['id', 'creation_date', 'procession_date', 'completion_date', 'user', 'agreement_refer', 'status', 'accounts']
+        fields = ['id', 'creation_date', 'procession_date', 'completion_date', 'user', 'agreement_refer', 'status', 'moderator', 'accounts']
 
 
 # class UsersSerializer(serializers.ModelSerializer):
